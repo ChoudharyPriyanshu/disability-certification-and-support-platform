@@ -2,6 +2,7 @@ const Certificate = require('../models/Certificate');
 const Application = require('../models/Application');
 const blockchainService = require('../services/blockchainService');
 const hashService = require('../services/hashService');
+const pdfService = require('../services/pdfService');
 
 /**
  * Issue certificate (ADMIN only)
@@ -87,6 +88,25 @@ exports.issueCertificate = async (req, res) => {
         }
 
         await certificate.save();
+
+        // Generate PDF certificate
+        try {
+            const pdfResult = await pdfService.generateCertificatePDF({
+                certificateNumber: certificate.certificateNumber,
+                user: application.user,
+                application: application,
+                blockchainTxHash: certificate.blockchain.transactionHash,
+                issuedDate: certificate.issueDate,
+                disabilityType: certificate.disabilityType,
+                disabilityPercentage: certificate.disabilityPercentage
+            });
+
+            certificate.pdfUrl = pdfResult.relativePath;
+            await certificate.save();
+        } catch (pdfError) {
+            console.error('PDF generation failed:', pdfError);
+            // Continue - certificate is still valid even without PDF
+        }
 
         // Update application status
         application.updateStatus('CERTIFICATE_ISSUED', req.user._id, 'Certificate issued');

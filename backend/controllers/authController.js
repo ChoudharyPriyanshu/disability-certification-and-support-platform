@@ -1,11 +1,12 @@
 const User = require('../models/User');
+const crypto = require('crypto');
 
 /**
  * Register a new user
  */
 exports.register = async (req, res) => {
     try {
-        const { email, password, role, profile } = req.body;
+        const { email, password, role, profile, aadhaarNumber } = req.body;
 
         // Check if user already exists
         const existingUser = await User.findOne({ email });
@@ -13,6 +14,14 @@ exports.register = async (req, res) => {
             return res.status(400).json({
                 success: false,
                 error: 'User with this email already exists'
+            });
+        }
+
+        // Validate Aadhaar number if provided
+        if (aadhaarNumber && !/^\d{12}$/.test(aadhaarNumber)) {
+            return res.status(400).json({
+                success: false,
+                error: 'Aadhaar number must be exactly 12 digits'
             });
         }
 
@@ -34,6 +43,15 @@ exports.register = async (req, res) => {
             profile
         });
 
+        // Hash and store Aadhaar if provided (SECURE - never store full Aadhaar)
+        if (aadhaarNumber) {
+            user.aadhaar = {
+                lastFourDigits: aadhaarNumber.slice(-4),
+                hashedReference: crypto.createHash('sha256').update(aadhaarNumber).digest('hex'),
+                verified: false  // Will be verified later via OTP
+            };
+        }
+
         await user.save();
 
         // Generate token
@@ -42,13 +60,18 @@ exports.register = async (req, res) => {
         // Remove password from response
         const userResponse = user.toObject();
         delete userResponse.password;
+        // Also remove hashed Aadhaar from response (security)
+        if (userResponse.aadhaar) {
+            delete userResponse.aadhaar.hashedReference;
+        }
 
         res.status(201).json({
             success: true,
             message: 'User registered successfully',
             data: {
                 user: userResponse,
-                token
+                token,
+                aadhaarPending: aadhaarNumber ? !user.aadhaar.verified : false
             }
         });
     } catch (error) {

@@ -48,11 +48,11 @@ class BlockchainService {
             this.wallet = new ethers.Wallet(process.env.PRIVATE_KEY, this.provider);
 
             // Initialize contract instance
-            this.contract = new ethers.Contract(contractAddress, contractAbi, this.wallet);
+            this.contract = new ethers.Contract(this.contractAddress, contractAbi, this.wallet);
 
             this.initialized = true;
             console.log('✓ Blockchain service initialized');
-            console.log(`  Contract: ${contractAddress}`);
+            console.log(`  Contract: ${this.contractAddress}`);
             console.log(`  Network: ${process.env.BLOCKCHAIN_NETWORK}`);
 
             return true;
@@ -106,6 +106,15 @@ class BlockchainService {
     async verifyCertificateHash(hash) {
         if (!this.initialized) {
             await this.initialize();
+        }
+
+        if (!this.BLOCKCHAIN_ENABLED) {
+            console.log('ℹ Blockchain disabled - returning dummy verification data');
+            return {
+                verified: true,
+                timestamp: new Date(),
+                blockchainDisabled: true
+            };
         }
 
         try {

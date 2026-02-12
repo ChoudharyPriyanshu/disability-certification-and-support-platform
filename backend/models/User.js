@@ -63,6 +63,21 @@ const userSchema = new mongoose.Schema({
             required: function () { return this.role === 'DOCTOR'; }
         }
     },
+    // Aadhaar verification (SECURE - No full Aadhaar stored)
+    aadhaar: {
+        lastFourDigits: {
+            type: String,
+            match: [/^\d{4}$/, 'Last four digits must be 4 digits']
+        },
+        hashedReference: {
+            type: String // SHA-256 hash of full Aadhaar for verification
+        },
+        verified: {
+            type: Boolean,
+            default: false
+        },
+        verifiedAt: Date
+    },
     isActive: {
         type: Boolean,
         default: true

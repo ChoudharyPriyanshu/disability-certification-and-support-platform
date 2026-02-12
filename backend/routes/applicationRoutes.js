@@ -2,14 +2,16 @@ const express = require('express');
 const router = express.Router();
 const applicationController = require('../controllers/applicationController');
 const { authenticate, authorize } = require('../middleware/authMiddleware');
+const { requireAadhaarVerification } = require('../middleware/aadhaarMiddleware');
 const uploadMiddleware = require('../middleware/uploadMiddleware');
 
 // All routes require authentication
 router.use(authenticate);
 
-// Submit application (PWD_USER)
+// Submit application (PWD_USER) - Requires Aadhaar verification
 router.post('/',
     authorize('PWD_USER'),
+    requireAadhaarVerification,
     applicationController.submitApplication
 );
 

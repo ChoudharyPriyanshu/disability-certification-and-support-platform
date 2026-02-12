@@ -10,6 +10,7 @@ const Register = () => {
         password: '',
         confirmPassword: '',
         role: 'PWD_USER',
+        aadhaarNumber: '',
         profile: {
             firstName: '',
             lastName: '',
@@ -26,7 +27,7 @@ const Register = () => {
     const handleChange = (e) => {
         const { name, value } = e.target;
 
-        if (name === 'role' || name === 'email' || name === 'password' || name === 'confirmPassword') {
+        if (name === 'role' || name === 'email' || name === 'password' || name === 'confirmPassword' || name === 'aadhaarNumber') {
             setFormData({ ...formData, [name]: value });
         } else {
             setFormData({
@@ -52,6 +53,7 @@ const Register = () => {
                 email: formData.email,
                 password: formData.password,
                 role: formData.role,
+                aadhaarNumber: formData.aadhaarNumber,
                 profile: formData.profile
             };
 
@@ -191,6 +193,83 @@ const Register = () => {
                                     fontSize: '0.9375rem'
                                 }}
                             />
+                        </div>
+
+                        <div style={{ marginBottom: 'var(--spacing-md)' }}>
+                            <label style={{
+                                display: 'block',
+                                marginBottom: 'var(--spacing-sm)',
+                                fontSize: '0.875rem',
+                                fontWeight: 500,
+                                color: 'var(--color-text-secondary)'
+                            }}>
+                                Role
+                            </label>
+                            <select
+                                name="role"
+                                value={formData.role}
+                                onChange={handleChange}
+                                required
+                                style={{
+                                    width: '100%',
+                                    padding: 'var(--spacing-md)',
+                                    background: 'var(--color-surface-2)',
+                                    border: '1px solid var(--color-border-default)',
+                                    borderRadius: 'var(--radius-md)',
+                                    color: 'var(--color-text-primary)',
+                                    fontSize: '0.9375rem',
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                <option value="PWD_USER">Person with Disability</option>
+                                <option value="DOCTOR">Medical Professional</option>
+                                <option value="ADMIN">Administrator</option>
+                            </select>
+                            <p style={{
+                                fontSize: '0.75rem',
+                                color: 'var(--color-text-tertiary)',
+                                marginTop: 'var(--spacing-xs)'
+                            }}>
+                                Select your role in the system
+                            </p>
+                        </div>
+
+                        <div style={{ marginBottom: 'var(--spacing-md)' }}>
+                            <label style={{
+                                display: 'block',
+                                marginBottom: 'var(--spacing-sm)',
+                                fontSize: '0.875rem',
+                                fontWeight: 500,
+                                color: 'var(--color-text-secondary)'
+                            }}>
+                                Aadhaar Number
+                            </label>
+                            <input
+                                type="text"
+                                name="aadhaarNumber"
+                                value={formData.aadhaarNumber}
+                                onChange={handleChange}
+                                required
+                                pattern="[0-9]{12}"
+                                maxLength="12"
+                                placeholder="123456789012"
+                                style={{
+                                    width: '100%',
+                                    padding: 'var(--spacing-md)',
+                                    background: 'var(--color-surface-2)',
+                                    border: '1px solid var(--color-border-default)',
+                                    borderRadius: 'var(--radius-md)',
+                                    color: 'var(--color-text-primary)',
+                                    fontSize: '0.9375rem'
+                                }}
+                            />
+                            <p style={{
+                                fontSize: '0.75rem',
+                                color: 'var(--color-text-tertiary)',
+                                marginTop: 'var(--spacing-xs)'
+                            }}>
+                                Enter 12-digit Aadhaar number. You'll verify this with OTP after registration.
+                            </p>
                         </div>
 
                         <div style={{ marginBottom: 'var(--spacing-md)' }}>

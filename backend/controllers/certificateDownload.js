@@ -1,30 +1,8 @@
-const express = require('express');
-const router = express.Router();
-const certificateController = require('../controllers/certificateController');
-const { authenticate, authorize } = require('../middleware/authMiddleware');
-
-// Public verification endpoint (no auth required)
-router.get('/verify', certificateController.verifyCertificate);
-
-// Protected routes
-router.use(authenticate);
-
-// Issue certificate (ADMIN)
-router.post('/issue',
-    authorize('ADMIN'),
-    certificateController.issueCertificate
-);
-
-// Get user's certificates
-router.get('/my-certificates', certificateController.getUserCertificates);
-
-// Get certificate by ID
-router.get('/:id', certificateController.getCertificateById);
-
-// Download certificate PDF
-router.get('/:id/download', async (req, res, next) => {
+/**
+ * Download certificate PDF (authenticated users only)
+ */
+exports.downloadCertificate = async (req, res) => {
     try {
-        const Certificate = require('../models/Certificate');
         const certificate = await Certificate.findById(req.params.id);
 
         if (!certificate) {
@@ -34,7 +12,7 @@ router.get('/:id/download', async (req, res, next) => {
             });
         }
 
-        // Authorization check
+        // Authorization check - only certificate holder or admin/doctor
         if (req.user.role === 'PWD_USER' && certificate.user.toString() !== req.user._id.toString()) {
             return res.status(403).json({
                 success: false,
@@ -45,14 +23,15 @@ router.get('/:id/download', async (req, res, next) => {
         if (!certificate.pdfUrl) {
             return res.status(404).json({
                 success: false,
-                error: 'PDF not available'
+                error: 'PDF not available for this certificate'
             });
         }
 
         const path = require('path');
-        const fs = require('fs');
         const filepath = path.join(__dirname, '..', certificate.pdfUrl);
 
+        // Check if file exists
+        const fs = require('fs');
         if (!fs.existsSync(filepath)) {
             return res.status(404).json({
                 success: false,
@@ -60,17 +39,19 @@ router.get('/:id/download', async (req, res, next) => {
             });
         }
 
+        // Set headers for PDF download
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `attachment; filename="${certificate.certificateNumber}.pdf"`);
 
+        // Stream the file
         const fileStream = fs.createReadStream(filepath);
         fileStream.pipe(res);
+
     } catch (error) {
-        next(error);
+        console.error('PDF download error:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to download certificate'
+        });
     }
-});
-
-// Get certificate by application
-router.get('/application/:applicationId', certificateController.getCertificateByApplication);
-
-module.exports = router;
+};
