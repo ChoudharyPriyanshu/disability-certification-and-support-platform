@@ -21,17 +21,28 @@ const Register = () => {
 
     const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }))
 
+    // Step 1 → Step 2
+    const handleContinue = () => {
+        setError('')
+        if (!form.name.trim()) { setError('Please enter your full name'); return }
+        if (!form.email.trim()) { setError('Please enter your email'); return }
+        if (!form.password || form.password.length < 6) { setError('Password must be at least 6 characters'); return }
+        if (form.password !== form.confirmPassword) { setError('Passwords do not match'); return }
+        setStep(2)
+    }
+
+    // Final form submission
     const handleSubmit = async (e) => {
         e.preventDefault()
-        if (form.password !== form.confirmPassword) {
-            setError('Passwords do not match')
-            return
-        }
         setError('')
         setLoading(true)
 
         try {
-            const { data } = await authService.register(form)
+            // Strip empty optional fields — prevents Mongoose enum validation error on gender/dateOfBirth
+            const payload = Object.fromEntries(
+                Object.entries(form).filter(([key, v]) => key !== 'confirmPassword' && v !== '')
+            )
+            const { data } = await authService.register(payload)
             login(data.data)
             toast.success('Account created successfully')
             navigate('/dashboard')
@@ -80,101 +91,111 @@ const Register = () => {
                 </div>
             </div>
 
-            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
-                {step === 1 && (
-                    <>
-                        <div className="form-field">
-                            <label className="form-label" htmlFor="name">Full name</label>
-                            <input id="name" type="text" className="form-input" placeholder="As on Aadhaar card"
-                                value={form.name} onChange={set('name')} required autoComplete="name" />
-                        </div>
-                        <div className="form-field">
-                            <label className="form-label" htmlFor="email">Email address</label>
-                            <input id="email" type="email" className="form-input" placeholder="you@example.com"
-                                value={form.email} onChange={set('email')} required autoComplete="email" />
-                        </div>
-                        <div className="form-field">
-                            <label className="form-label" htmlFor="password">Password</label>
-                            <div style={{ position: 'relative' }}>
-                                <input
-                                    id="password"
-                                    type={showPassword ? 'text' : 'password'}
-                                    className="form-input"
-                                    placeholder="Minimum 6 characters"
-                                    value={form.password}
-                                    onChange={set('password')}
-                                    required
-                                    minLength={6}
-                                    style={{ paddingRight: '44px' }}
-                                />
-                                <button type="button" onClick={() => setShowPassword((v) => !v)}
-                                    style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-slate-400)', padding: '4px' }}>
-                                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                                </button>
-                            </div>
-                        </div>
-                        <div className="form-field">
-                            <label className="form-label" htmlFor="confirmPassword">Confirm password</label>
-                            <input id="confirmPassword" type="password" className="form-input" placeholder="Re-enter password"
-                                value={form.confirmPassword} onChange={set('confirmPassword')} required />
-                        </div>
-                        <button type="button" className="btn btn-primary" style={{ width: '100%', marginTop: '4px', justifyContent: 'center' }}
-                            onClick={() => {
-                                if (!form.name || !form.email || !form.password) return
-                                if (form.password !== form.confirmPassword) { setError('Passwords do not match'); return }
-                                setError(''); setStep(2)
-                            }}>
-                            Continue
-                        </button>
-                    </>
-                )}
-
-                {step === 2 && (
-                    <>
-                        <div className="form-field">
-                            <label className="form-label" htmlFor="phone">Phone number</label>
-                            <input id="phone" type="tel" className="form-input" placeholder="+91 98765 43210"
-                                value={form.phone} onChange={set('phone')} />
-                        </div>
-                        <div className="form-field">
-                            <label className="form-label" htmlFor="aadhaar">Aadhaar number</label>
-                            <input id="aadhaar" type="text" className="form-input" placeholder="XXXX XXXX XXXX (encrypted)"
-                                value={form.aadhaar} onChange={set('aadhaar')} maxLength={12} />
-                            <span className="form-hint">Stored with AES-256 encryption</span>
-                        </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
-                            <div className="form-field">
-                                <label className="form-label" htmlFor="dob">Date of birth</label>
-                                <input id="dob" type="date" className="form-input"
-                                    value={form.dateOfBirth} onChange={set('dateOfBirth')} />
-                            </div>
-                            <div className="form-field">
-                                <label className="form-label" htmlFor="gender">Gender</label>
-                                <select id="gender" className="form-input form-select"
-                                    value={form.gender} onChange={set('gender')}>
-                                    <option value="">Select</option>
-                                    <option>Male</option>
-                                    <option>Female</option>
-                                    <option>Other</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div className="form-field">
-                            <label className="form-label" htmlFor="address">Address</label>
-                            <textarea id="address" className="form-input form-textarea" rows={3} placeholder="Full residential address"
-                                value={form.address} onChange={set('address')} />
-                        </div>
-                        <div style={{ display: 'flex', gap: '12px', marginTop: '4px' }}>
-                            <button type="button" className="btn btn-secondary" style={{ flex: 1 }}
-                                onClick={() => setStep(1)}>Back</button>
-                            <button type="submit" className="btn btn-primary" style={{ flex: 2, justifyContent: 'center' }}
-                                disabled={loading}>
-                                {loading ? <span className="spinner spinner-sm" /> : 'Create account'}
+            {/* ── STEP 1 — Account details (NOT a form, prevents accidental submit) ── */}
+            {step === 1 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+                    <div className="form-field">
+                        <label className="form-label" htmlFor="name">Full name</label>
+                        <input id="name" type="text" className="form-input" placeholder="As on Aadhaar card"
+                            value={form.name} onChange={set('name')} autoComplete="name" />
+                    </div>
+                    <div className="form-field">
+                        <label className="form-label" htmlFor="email">Email address</label>
+                        <input id="email" type="email" className="form-input" placeholder="you@example.com"
+                            value={form.email} onChange={set('email')} autoComplete="email" />
+                    </div>
+                    <div className="form-field">
+                        <label className="form-label" htmlFor="password">Password</label>
+                        <div style={{ position: 'relative' }}>
+                            <input
+                                id="password"
+                                type={showPassword ? 'text' : 'password'}
+                                className="form-input"
+                                placeholder="Minimum 6 characters"
+                                value={form.password}
+                                onChange={set('password')}
+                                autoComplete="new-password"
+                                style={{ paddingRight: '44px' }}
+                            />
+                            <button type="button" onClick={() => setShowPassword((v) => !v)}
+                                style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-slate-400)', padding: '4px' }}
+                                aria-label={showPassword ? 'Hide password' : 'Show password'}>
+                                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                             </button>
                         </div>
-                    </>
-                )}
-            </form>
+                    </div>
+                    <div className="form-field">
+                        <label className="form-label" htmlFor="confirmPassword">Confirm password</label>
+                        <input id="confirmPassword" type="password" className="form-input" placeholder="Re-enter password"
+                            value={form.confirmPassword} onChange={set('confirmPassword')} autoComplete="new-password" />
+                    </div>
+                    <button
+                        type="button"
+                        className="btn btn-primary"
+                        style={{ width: '100%', marginTop: '4px', justifyContent: 'center' }}
+                        onClick={handleContinue}
+                    >
+                        Continue
+                    </button>
+                </div>
+            )}
+
+            {/* ── STEP 2 — Personal details (real form with POST submit) ── */}
+            {step === 2 && (
+                <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+                    <div className="form-field">
+                        <label className="form-label" htmlFor="phone">Phone number</label>
+                        <input id="phone" type="tel" className="form-input" placeholder="+91 98765 43210"
+                            value={form.phone} onChange={set('phone')} autoComplete="tel" />
+                    </div>
+                    <div className="form-field">
+                        <label className="form-label" htmlFor="aadhaar">Aadhaar number</label>
+                        <input id="aadhaar" type="text" className="form-input" placeholder="XXXX XXXX XXXX (encrypted)"
+                            value={form.aadhaar} onChange={set('aadhaar')} maxLength={12} inputMode="numeric" />
+                        <span className="form-hint">Stored with AES-256 encryption</span>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+                        <div className="form-field">
+                            <label className="form-label" htmlFor="dob">Date of birth</label>
+                            <input id="dob" type="date" className="form-input"
+                                value={form.dateOfBirth} onChange={set('dateOfBirth')} />
+                        </div>
+                        <div className="form-field">
+                            <label className="form-label" htmlFor="gender">Gender</label>
+                            <select id="gender" className="form-input form-select"
+                                value={form.gender} onChange={set('gender')}>
+                                <option value="">Select (optional)</option>
+                                <option value="Male">Male</option>
+                                <option value="Female">Female</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div className="form-field">
+                        <label className="form-label" htmlFor="address">Address</label>
+                        <textarea id="address" className="form-input form-textarea" rows={3} placeholder="Full residential address"
+                            value={form.address} onChange={set('address')} />
+                    </div>
+                    <div style={{ display: 'flex', gap: '12px', marginTop: '4px' }}>
+                        <button
+                            type="button"
+                            className="btn btn-secondary"
+                            style={{ flex: 1 }}
+                            onClick={() => { setStep(1); setError('') }}
+                        >
+                            Back
+                        </button>
+                        <button
+                            type="submit"
+                            className="btn btn-primary"
+                            style={{ flex: 2, justifyContent: 'center' }}
+                            disabled={loading}
+                        >
+                            {loading ? <span className="spinner spinner-sm" /> : 'Create account'}
+                        </button>
+                    </div>
+                </form>
+            )}
 
             <p style={{ textAlign: 'center', marginTop: '20px', fontSize: '14px', color: 'var(--color-slate-500)' }}>
                 Already have an account?{' '}
