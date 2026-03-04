@@ -1,155 +1,135 @@
-const GovernmentScheme = require('../models/GovernmentScheme');
+const Scheme = require('../models/Scheme');
 
 /**
- * Get all schemes
+ * @desc    Get all active schemes
+ * @route   GET /api/schemes
+ * @access  Public
  */
-exports.getSchemes = async (req, res) => {
+const getSchemes = async (req, res, next) => {
     try {
-        const { category, state, page = 1, limit = 20 } = req.query;
-        const skip = (page - 1) * limit;
+        const { disabilityType, percentage } = req.query;
+        const query = { isActive: true };
 
-        let query = { isActive: true };
-
-        if (category) {
-            query.category = category;
+        if (disabilityType) {
+            query.disabilityTypes = { $in: [disabilityType, 'All'] };
         }
 
-        if (state) {
-            query.state = { $in: [state, 'All India'] };
+        if (percentage) {
+            query.minimumPercentage = { $lte: parseInt(percentage) };
         }
 
-        const schemes = await GovernmentScheme.find(query)
-            .sort({ name: 1 })
-            .limit(parseInt(limit))
-            .skip(skip);
-
-        const total = await GovernmentScheme.countDocuments(query);
+        const schemes = await Scheme.find(query).sort({ createdAt: -1 });
 
         res.json({
             success: true,
-            data: {
-                schemes,
-                pagination: {
-                    total,
-                    page: parseInt(page),
-                    pages: Math.ceil(total / limit)
-                }
-            }
+            count: schemes.length,
+            data: schemes,
         });
     } catch (error) {
-        res.status(500).json({
-            success: false,
-            error: 'Failed to fetch schemes'
-        });
+        next(error);
     }
 };
 
 /**
- * Get scheme by ID
+ * @desc    Get single scheme
+ * @route   GET /api/schemes/:id
+ * @access  Public
  */
-exports.getSchemeById = async (req, res) => {
+const getScheme = async (req, res, next) => {
     try {
-        const scheme = await GovernmentScheme.findById(req.params.id);
+        const scheme = await Scheme.findById(req.params.id);
 
         if (!scheme) {
             return res.status(404).json({
                 success: false,
-                error: 'Scheme not found'
+                message: 'Scheme not found',
             });
         }
 
         res.json({
             success: true,
-            data: {
-                scheme
-            }
+            data: scheme,
         });
     } catch (error) {
-        res.status(500).json({
-            success: false,
-            error: 'Failed to fetch scheme'
-        });
+        next(error);
     }
 };
 
 /**
- * Create scheme (ADMIN only)
+ * @desc    Create scheme
+ * @route   POST /api/schemes
+ * @access  Private (Admin)
  */
-exports.createScheme = async (req, res) => {
+const createScheme = async (req, res, next) => {
     try {
-        const scheme = new GovernmentScheme(req.body);
-        await scheme.save();
+        const scheme = await Scheme.create(req.body);
 
         res.status(201).json({
             success: true,
-            message: 'Scheme created successfully',
-            data: {
-                scheme
-            }
+            data: scheme,
         });
     } catch (error) {
-        res.status(500).json({
-            success: false,
-            error: error.message || 'Failed to create scheme'
-        });
+        next(error);
     }
 };
 
 /**
- * Update scheme (ADMIN only)
+ * @desc    Update scheme
+ * @route   PUT /api/schemes/:id
+ * @access  Private (Admin)
  */
-exports.updateScheme = async (req, res) => {
+const updateScheme = async (req, res, next) => {
     try {
-        const scheme = await GovernmentScheme.findByIdAndUpdate(
-            req.params.id,
-            req.body,
-            { new: true, runValidators: true }
-        );
+        const scheme = await Scheme.findByIdAndUpdate(req.params.id, req.body, {
+            new: true,
+            runValidators: true,
+        });
 
         if (!scheme) {
             return res.status(404).json({
                 success: false,
-                error: 'Scheme not found'
+                message: 'Scheme not found',
             });
         }
 
         res.json({
             success: true,
-            message: 'Scheme updated successfully',
-            data: {
-                scheme
-            }
+            data: scheme,
         });
     } catch (error) {
-        res.status(500).json({
-            success: false,
-            error: 'Failed to update scheme'
-        });
+        next(error);
     }
 };
 
 /**
- * Delete scheme (ADMIN only)
+ * @desc    Delete scheme
+ * @route   DELETE /api/schemes/:id
+ * @access  Private (Admin)
  */
-exports.deleteScheme = async (req, res) => {
+const deleteScheme = async (req, res, next) => {
     try {
-        const scheme = await GovernmentScheme.findByIdAndDelete(req.params.id);
+        const scheme = await Scheme.findByIdAndDelete(req.params.id);
 
         if (!scheme) {
             return res.status(404).json({
                 success: false,
-                error: 'Scheme not found'
+                message: 'Scheme not found',
             });
         }
 
         res.json({
             success: true,
-            message: 'Scheme deleted successfully'
+            message: 'Scheme removed',
         });
     } catch (error) {
-        res.status(500).json({
-            success: false,
-            error: 'Failed to delete scheme'
-        });
+        next(error);
     }
+};
+
+module.exports = {
+    getSchemes,
+    getScheme,
+    createScheme,
+    updateScheme,
+    deleteScheme,
 };

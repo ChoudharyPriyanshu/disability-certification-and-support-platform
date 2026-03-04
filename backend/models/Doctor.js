@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
-const userSchema = new mongoose.Schema(
+const doctorSchema = new mongoose.Schema(
     {
         name: {
             type: String,
@@ -23,28 +23,29 @@ const userSchema = new mongoose.Schema(
             minlength: 6,
             select: false,
         },
-        phone: {
+        specialization: {
             type: String,
+            required: [true, 'Specialization is required'],
             trim: true,
         },
-        aadhaar: {
+        licenseNumber: {
             type: String, // AES-256 encrypted
+            required: [true, 'License number is required'],
+        },
+        hospital: {
+            type: String,
+            required: [true, 'Hospital name is required'],
             trim: true,
         },
-        address: {
-            type: String,
-            trim: true,
-        },
-        dateOfBirth: {
-            type: Date,
-        },
-        gender: {
-            type: String,
-            enum: ['Male', 'Female', 'Other'],
-        },
+        assignedCases: [
+            {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: 'Application',
+            },
+        ],
         role: {
             type: String,
-            default: 'PWD_USER',
+            default: 'DOCTOR',
             immutable: true,
         },
     },
@@ -54,7 +55,7 @@ const userSchema = new mongoose.Schema(
 );
 
 // Hash password before save
-userSchema.pre('save', async function (next) {
+doctorSchema.pre('save', async function (next) {
     if (!this.isModified('password')) return next();
     const salt = await bcrypt.genSalt(12);
     this.password = await bcrypt.hash(this.password, salt);
@@ -62,8 +63,8 @@ userSchema.pre('save', async function (next) {
 });
 
 // Compare password
-userSchema.methods.matchPassword = async function (enteredPassword) {
+doctorSchema.methods.matchPassword = async function (enteredPassword) {
     return await bcrypt.compare(enteredPassword, this.password);
 };
 
-module.exports = mongoose.model('User', userSchema);
+module.exports = mongoose.model('Doctor', doctorSchema);

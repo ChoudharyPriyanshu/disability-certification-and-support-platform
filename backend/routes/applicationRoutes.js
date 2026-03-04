@@ -1,53 +1,36 @@
 const express = require('express');
 const router = express.Router();
-const applicationController = require('../controllers/applicationController');
-const { authenticate, authorize } = require('../middleware/authMiddleware');
-const { requireAadhaarVerification } = require('../middleware/aadhaarMiddleware');
-const uploadMiddleware = require('../middleware/uploadMiddleware');
+const {
+    submitApplication,
+    getMyApplications,
+    getApplication,
+    uploadDocuments,
+    getAllApplications,
+    reviewApplication,
+    assignDoctor,
+    scheduleAssessment,
+    approveApplication,
+    rejectApplication,
+} = require('../controllers/applicationController');
+const { protect, authorize } = require('../middleware/auth');
+const upload = require('../middleware/upload');
 
-// All routes require authentication
-router.use(authenticate);
+// PwD User routes
+router.post('/', protect, authorize('PWD_USER'), upload.array('documents', 5), submitApplication);
+router.get('/my', protect, authorize('PWD_USER'), getMyApplications);
 
-// Submit application (PWD_USER) - Requires Aadhaar verification
-router.post('/',
-    authorize('PWD_USER'),
-    requireAadhaarVerification,
-    applicationController.submitApplication
-);
+// Shared route (all authenticated users)
+router.get('/:id', protect, getApplication);
 
-// Get applications (role-filtered)
-router.get('/', applicationController.getApplications);
+// Document upload
+router.post('/:id/documents', protect, authorize('PWD_USER'), upload.array('documents', 5), uploadDocuments);
 
-// Get single application
-router.get('/:id', applicationController.getApplicationById);
-
-// Upload documents
-router.patch('/:id/documents',
-    authorize('PWD_USER'),
-    uploadMiddleware.fields([
-        { name: 'medicalCertificate', maxCount: 1 },
-        { name: 'aadharCard', maxCount: 1 },
-        { name: 'photograph', maxCount: 1 }
-    ]),
-    applicationController.uploadDocuments
-);
-
-// Update application status (ADMIN)
-router.patch('/:id/status',
-    authorize('ADMIN'),
-    applicationController.updateApplicationStatus
-);
-
-// Assign doctor (ADMIN)
-router.patch('/:id/assign-doctor',
-    authorize('ADMIN'),
-    applicationController.assignDoctor
-);
-
-// Submit assessment (DOCTOR)
-router.patch('/:id/assessment',
-    authorize('DOCTOR'),
-    applicationController.submitAssessment
-);
+// Admin routes
+router.get('/', protect, authorize('ADMIN'), getAllApplications);
+router.put('/:id/review', protect, authorize('ADMIN'), reviewApplication);
+router.put('/:id/assign-doctor', protect, authorize('ADMIN'), assignDoctor);
+router.put('/:id/schedule', protect, authorize('ADMIN'), scheduleAssessment);
+router.put('/:id/approve', protect, authorize('ADMIN'), approveApplication);
+router.put('/:id/reject', protect, authorize('ADMIN'), rejectApplication);
 
 module.exports = router;

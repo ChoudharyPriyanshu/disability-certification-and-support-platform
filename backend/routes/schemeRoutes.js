@@ -1,29 +1,21 @@
 const express = require('express');
 const router = express.Router();
-const schemeController = require('../controllers/schemeController');
-const { authenticate, authorize } = require('../middleware/authMiddleware');
+const {
+    getSchemes,
+    getScheme,
+    createScheme,
+    updateScheme,
+    deleteScheme,
+} = require('../controllers/schemeController');
+const { protect, authorize } = require('../middleware/auth');
 
 // Public routes
-router.get('/', schemeController.getSchemes);
-router.get('/:id', schemeController.getSchemeById);
+router.get('/', getSchemes);
+router.get('/:id', getScheme);
 
 // Admin routes
-router.post('/',
-    authenticate,
-    authorize('ADMIN'),
-    schemeController.createScheme
-);
-
-router.patch('/:id',
-    authenticate,
-    authorize('ADMIN'),
-    schemeController.updateScheme
-);
-
-router.delete('/:id',
-    authenticate,
-    authorize('ADMIN'),
-    schemeController.deleteScheme
-);
+router.post('/', protect, authorize('ADMIN'), createScheme);
+router.put('/:id', protect, authorize('ADMIN'), updateScheme);
+router.delete('/:id', protect, authorize('ADMIN'), deleteScheme);
 
 module.exports = router;

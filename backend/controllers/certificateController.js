@@ -1,286 +1,222 @@
 const Certificate = require('../models/Certificate');
 const Application = require('../models/Application');
-const blockchainService = require('../services/blockchainService');
-const hashService = require('../services/hashService');
-const pdfService = require('../services/pdfService');
+const User = require('../models/User');
+const generateHash = require('../utils/generateHash');
+const generateCertificatePDF = require('../utils/generateCertificate');
 
 /**
- * Issue certificate (ADMIN only)
+ * @desc    Generate certificate for approved application
+ * @route   POST /api/certificates/generate/:applicationId
+ * @access  Private (Admin)
  */
-exports.issueCertificate = async (req, res) => {
+const generateCertificate = async (req, res, next) => {
     try {
-        const { applicationId } = req.body;
-
-        const application = await Application.findById(applicationId)
-            .populate('user');
+        const application = await Application.findById(req.params.applicationId)
+            .populate('applicant', 'name email dateOfBirth gender address')
+            .populate('assignedDoctor', 'name specialization');
 
         if (!application) {
             return res.status(404).json({
                 success: false,
-                error: 'Application not found'
+                message: 'Application not found',
             });
         }
 
-        // Verify application is approved
         if (application.status !== 'APPROVED') {
             return res.status(400).json({
                 success: false,
-                error: 'Application must be in APPROVED status'
+                message: 'Application must be approved before generating certificate',
             });
         }
 
         // Check if certificate already exists
-        const existingCertificate = await Certificate.findOne({ application: applicationId });
-
-        if (existingCertificate) {
+        const existingCert = await Certificate.findOne({ application: application._id });
+        if (existingCert) {
             return res.status(400).json({
                 success: false,
-                error: 'Certificate already issued for this application'
+                message: 'Certificate already generated for this application',
+                data: existingCert,
             });
         }
 
-        // Create certificate
-        const certificate = new Certificate({
-            application: applicationId,
-            user: application.user._id,
-            disabilityType: application.disabilityInfo.type,
-            disabilityPercentage: application.assessment.assessedPercentage,
-            issuedBy: req.user._id
-        });
+        // Generate unique certificate number
+        const certificateNumber = `UDID-${Date.now()}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
 
-        // Generate certificate hash
+        // Prepare certificate data
         const certificateData = {
-            certificateNumber: certificate.certificateNumber,
-            userId: certificate.user.toString(),
-            applicationId: certificate.application.toString(),
-            disabilityType: certificate.disabilityType,
-            disabilityPercentage: certificate.disabilityPercentage,
-            issueDate: certificate.issueDate,
-            validUntil: certificate.validUntil
+            certificateNumber,
+            applicantName: application.applicantName || application.applicant.name,
+            dateOfBirth: application.dateOfBirth || application.applicant.dateOfBirth,
+            gender: application.gender || application.applicant.gender,
+            address: application.address || application.applicant.address,
+            disabilityType: application.doctorEvaluation.disabilityType || application.disabilityType,
+            disabilityPercentage: application.doctorEvaluation.disabilityPercentage,
+            doctorName: application.assignedDoctor?.name,
+            issuedByName: req.user.name,
+            issuedDate: new Date(),
+            validUntil: null, // Lifetime validity
         };
 
-        const hash = hashService.generateCertificateHash(certificateData);
-        certificate.certificateHash = hash;
+        // Generate hash
+        const certificateHash = generateHash(certificateData);
+        certificateData.certificateHash = certificateHash;
 
-        // Generate QR code data (URL to verification page)
-        certificate.qrCodeData = JSON.stringify({
-            certificateNumber: certificate.certificateNumber,
-            hash: hash,
-            verifyUrl: `${process.env.FRONTEND_URL}/verify/${certificate.certificateNumber}`
+        // Generate PDF
+        const pdfResult = await generateCertificatePDF(certificateData);
+
+        // Create certificate record
+        const certificate = await Certificate.create({
+            application: application._id,
+            user: application.applicant._id || application.applicant,
+            certificateNumber,
+            disabilityType: certificateData.disabilityType,
+            disabilityPercentage: certificateData.disabilityPercentage,
+            issuedBy: req.user._id,
+            issuedDate: certificateData.issuedDate,
+            validUntil: certificateData.validUntil,
+            qrCodeData: pdfResult.qrCodeData,
+            pdfUrl: pdfResult.pdfUrl,
+            certificateHash,
+            isVerified: true,
         });
-
-        // Store hash on blockchain
-        try {
-            const blockchainResult = await blockchainService.storeCertificateHash(hash);
-
-            certificate.blockchain = {
-                transactionHash: blockchainResult.transactionHash,
-                blockNumber: blockchainResult.blockNumber,
-                timestamp: blockchainResult.timestamp,
-                verified: true
-            };
-        } catch (blockchainError) {
-            console.error('Blockchain storage failed:', blockchainError);
-            return res.status(500).json({
-                success: false,
-                error: 'Failed to store certificate on blockchain'
-            });
-        }
-
-        await certificate.save();
-
-        // Generate PDF certificate
-        try {
-            const pdfResult = await pdfService.generateCertificatePDF({
-                certificateNumber: certificate.certificateNumber,
-                user: application.user,
-                application: application,
-                blockchainTxHash: certificate.blockchain.transactionHash,
-                issuedDate: certificate.issueDate,
-                disabilityType: certificate.disabilityType,
-                disabilityPercentage: certificate.disabilityPercentage
-            });
-
-            certificate.pdfUrl = pdfResult.relativePath;
-            await certificate.save();
-        } catch (pdfError) {
-            console.error('PDF generation failed:', pdfError);
-            // Continue - certificate is still valid even without PDF
-        }
-
-        // Update application status
-        application.updateStatus('CERTIFICATE_ISSUED', req.user._id, 'Certificate issued');
-        await application.save();
 
         res.status(201).json({
             success: true,
-            message: 'Certificate issued successfully',
-            data: {
-                certificate
-            }
+            message: 'Certificate generated successfully',
+            data: certificate,
         });
     } catch (error) {
-        console.error('Certificate issuance error:', error);
-        res.status(500).json({
-            success: false,
-            error: error.message || 'Failed to issue certificate'
-        });
+        next(error);
     }
 };
 
 /**
- * Get certificate by ID
+ * @desc    Get current user's certificates
+ * @route   GET /api/certificates/my
+ * @access  Private (PwD User)
  */
-exports.getCertificateById = async (req, res) => {
+const getMyCertificates = async (req, res, next) => {
     try {
-        const certificate = await Certificate.findById(req.params.id)
-            .populate('user', 'profile.firstName profile.lastName profile.dateOfBirth')
-            .populate('application')
-            .populate('issuedBy', 'profile.firstName profile.lastName');
+        const certificates = await Certificate.find({ user: req.user._id })
+            .populate('application', 'disabilityType status')
+            .populate('issuedBy', 'name institution designation')
+            .sort({ createdAt: -1 });
+
+        res.json({
+            success: true,
+            count: certificates.length,
+            data: certificates,
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * @desc    Download certificate PDF
+ * @route   GET /api/certificates/:id/download
+ * @access  Private
+ */
+const downloadCertificate = async (req, res, next) => {
+    try {
+        const certificate = await Certificate.findById(req.params.id);
 
         if (!certificate) {
             return res.status(404).json({
                 success: false,
-                error: 'Certificate not found'
+                message: 'Certificate not found',
             });
         }
 
-        // Authorization check
-        if (req.user.role === 'PWD_USER' && certificate.user._id.toString() !== req.user._id.toString()) {
+        // Ensure user can only download their own certificate (unless admin)
+        if (
+            req.user.role === 'PWD_USER' &&
+            certificate.user.toString() !== req.user._id.toString()
+        ) {
             return res.status(403).json({
                 success: false,
-                error: 'Access denied'
+                message: 'Not authorized to download this certificate',
             });
         }
 
-        res.json({
-            success: true,
-            data: {
-                certificate
-            }
-        });
+        const path = require('path');
+        const filePath = path.join(__dirname, '..', certificate.pdfUrl);
+
+        res.download(filePath, `certificate-${certificate.certificateNumber}.pdf`);
     } catch (error) {
-        res.status(500).json({
-            success: false,
-            error: 'Failed to fetch certificate'
-        });
+        next(error);
     }
 };
 
 /**
- * Get certificate by application ID
+ * @desc    Verify certificate by hash (public)
+ * @route   GET /api/certificates/verify/:hash
+ * @access  Public
  */
-exports.getCertificateByApplication = async (req, res) => {
+const verifyCertificate = async (req, res, next) => {
     try {
-        const certificate = await Certificate.findOne({ application: req.params.applicationId })
-            .populate('user', 'profile.firstName profile.lastName')
-            .populate('issuedBy', 'profile.firstName profile.lastName');
+        const { hash } = req.params;
 
-        if (!certificate) {
-            return res.status(404).json({
-                success: false,
-                error: 'Certificate not found for this application'
-            });
-        }
-
-        res.json({
-            success: true,
-            data: {
-                certificate
-            }
-        });
-    } catch (error) {
-        res.status(500).json({
-            success: false,
-            error: 'Failed to fetch certificate'
-        });
-    }
-};
-
-/**
- * Verify certificate hash (PUBLIC)
- */
-exports.verifyCertificate = async (req, res) => {
-    try {
-        const { certificateNumber, hash } = req.query;
-
-        let certificate;
-
-        if (certificateNumber) {
-            certificate = await Certificate.findOne({ certificateNumber })
-                .populate('user', 'profile.firstName profile.lastName');
-        } else if (hash) {
-            certificate = await Certificate.findOne({ certificateHash: hash })
-                .populate('user', 'profile.firstName profile.lastName');
-        } else {
-            return res.status(400).json({
-                success: false,
-                error: 'Please provide certificateNumber or hash'
-            });
-        }
+        const certificate = await Certificate.findOne({ certificateHash: hash })
+            .populate('user', 'name')
+            .populate('issuedBy', 'name institution designation');
 
         if (!certificate) {
             return res.json({
-                success: true,
-                data: {
-                    verified: false,
-                    message: 'Certificate not found in database'
-                }
+                success: false,
+                verified: false,
+                message: 'Certificate not found — verification failed',
             });
         }
 
-        // Verify on blockchain
-        const blockchainVerification = await blockchainService.verifyCertificateHash(certificate.certificateHash);
-
         res.json({
             success: true,
+            verified: true,
+            message: 'Certificate verified successfully',
             data: {
-                verified: blockchainVerification.verified,
-                certificate: blockchainVerification.verified ? {
-                    certificateNumber: certificate.certificateNumber,
-                    holderName: certificate.user.fullName,
-                    disabilityType: certificate.disabilityType,
-                    disabilityPercentage: certificate.disabilityPercentage,
-                    issueDate: certificate.issueDate,
-                    validUntil: certificate.validUntil,
-                    isActive: certificate.isActive,
-                    blockchain: {
-                        verified: true,
-                        timestamp: blockchainVerification.timestamp,
-                        transactionHash: certificate.blockchain.transactionHash,
-                        blockNumber: certificate.blockchain.blockNumber
-                    }
-                } : null
-            }
+                certificateNumber: certificate.certificateNumber,
+                holderName: certificate.user?.name,
+                disabilityType: certificate.disabilityType,
+                disabilityPercentage: certificate.disabilityPercentage,
+                issuedDate: certificate.issuedDate,
+                validUntil: certificate.validUntil,
+                issuedBy: certificate.issuedBy?.name,
+                institution: certificate.issuedBy?.institution,
+                blockchainTxHash: certificate.blockchainTxHash,
+                isOnChain: !!certificate.blockchainTxHash,
+            },
         });
     } catch (error) {
-        console.error('Certificate verification error:', error);
-        res.status(500).json({
-            success: false,
-            error: 'Failed to verify certificate'
-        });
+        next(error);
     }
 };
 
 /**
- * Get user's certificates
+ * @desc    Get all certificates (Admin)
+ * @route   GET /api/certificates
+ * @access  Private (Admin)
  */
-exports.getUserCertificates = async (req, res) => {
+const getAllCertificates = async (req, res, next) => {
     try {
-        const certificates = await Certificate.find({ user: req.user._id })
-            .populate('application')
-            .sort({ issueDate: -1 });
+        const certificates = await Certificate.find()
+            .populate('user', 'name email')
+            .populate('issuedBy', 'name institution')
+            .sort({ createdAt: -1 });
 
         res.json({
             success: true,
-            data: {
-                certificates
-            }
+            count: certificates.length,
+            data: certificates,
         });
     } catch (error) {
-        res.status(500).json({
-            success: false,
-            error: 'Failed to fetch certificates'
-        });
+        next(error);
     }
+};
+
+module.exports = {
+    generateCertificate,
+    getMyCertificates,
+    downloadCertificate,
+    verifyCertificate,
+    getAllCertificates,
 };
