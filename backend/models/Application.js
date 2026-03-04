@@ -110,8 +110,8 @@ const applicationSchema = new mongoose.Schema(
     }
 );
 
-// Add status change to history on save
-applicationSchema.pre('save', function (next) {
+// Add status change to history on save (Mongoose 9 async style — no next())
+applicationSchema.pre('save', async function () {
     if (this.isModified('status')) {
         this.statusHistory.push({
             status: this.status,
@@ -120,7 +120,6 @@ applicationSchema.pre('save', function (next) {
             remarks: this._statusRemarks || '',
         });
     }
-    next();
 });
 
 module.exports = mongoose.model('Application', applicationSchema);
