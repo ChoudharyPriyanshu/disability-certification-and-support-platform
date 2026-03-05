@@ -53,15 +53,12 @@ const Sidebar = () => {
             {/* Header */}
             <div style={{ padding: '20px 20px 16px', borderBottom: '1px solid var(--border-light)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
-                    <div style={{
-                        width: '36px', height: '36px', borderRadius: '8px',
-                        background: meta.color, display: 'flex',
-                        alignItems: 'center', justifyContent: 'center', flexShrink: 0
-                    }}>
-                        <Shield size={18} color="white" />
-                    </div>
+                    <img src="/logo.png" alt="SAKSHAM" style={{ width: '36px', height: '36px', borderRadius: '8px', objectFit: 'cover', flexShrink: 0 }} />
                     <div style={{ minWidth: 0 }}>
-                        <div style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--color-slate-400)' }}>
+                        <div style={{ fontFamily: 'var(--font-serif)', fontSize: '1.0625rem', fontWeight: 700, color: 'var(--color-green-800)', lineHeight: 1.1 }}>
+                            SAKSHAM
+                        </div>
+                        <div style={{ fontSize: '10px', fontWeight: 600, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--color-slate-400)' }}>
                             {meta.label}
                         </div>
                     </div>

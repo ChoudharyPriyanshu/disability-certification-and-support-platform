@@ -30,11 +30,12 @@ import CaseDetail from './pages/doctor/CaseDetail'
 
 // Public pages
 import VerifyCertificate from './pages/public/VerifyCertificate'
+import LandingPage from './pages/public/LandingPage'
 
-// Root redirect based on role
+// Root: landing page for guests, dashboard redirect for authenticated users
 const RootRedirect = () => {
   const { isAuthenticated, role } = useAuth()
-  if (!isAuthenticated) return <Navigate to="/login" replace />
+  if (!isAuthenticated) return <LandingPage />
   const redirectMap = { PWD_USER: '/dashboard', ADMIN: '/admin/dashboard', DOCTOR: '/doctor/dashboard' }
   return <Navigate to={redirectMap[role] || '/login'} replace />
 }
