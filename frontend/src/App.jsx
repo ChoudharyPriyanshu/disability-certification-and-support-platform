@@ -23,6 +23,10 @@ import AdminApplications from './pages/admin/AdminApplications'
 import AdminApplicationDetail from './pages/admin/AdminApplicationDetail'
 import RegisterDoctor from './pages/admin/RegisterDoctor'
 import AdminRegister from './pages/auth/AdminRegister'
+import AdminDoctors from './pages/admin/AdminDoctors'
+import AdminCertificates from './pages/admin/AdminCertificates'
+import AdminSchemes from './pages/admin/AdminSchemes'
+import AdminProducts from './pages/admin/AdminProducts'
 
 // Doctor pages
 import DoctorDashboard from './pages/doctor/DoctorDashboard'
@@ -95,6 +99,18 @@ const App = () => {
           } />
           <Route path="/admin/doctors/register" element={
             <ProtectedRoute roles={['ADMIN']}><RegisterDoctor /></ProtectedRoute>
+          } />
+          <Route path="/admin/doctors" element={
+            <ProtectedRoute roles={['ADMIN']}><AdminDoctors /></ProtectedRoute>
+          } />
+          <Route path="/admin/certificates" element={
+            <ProtectedRoute roles={['ADMIN']}><AdminCertificates /></ProtectedRoute>
+          } />
+          <Route path="/admin/schemes" element={
+            <ProtectedRoute roles={['ADMIN']}><AdminSchemes /></ProtectedRoute>
+          } />
+          <Route path="/admin/products" element={
+            <ProtectedRoute roles={['ADMIN']}><AdminProducts /></ProtectedRoute>
           } />
 
           {/* Doctor */}

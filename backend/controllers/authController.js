@@ -278,6 +278,37 @@ const updateProfile = async (req, res, next) => {
     }
 };
 
+/**
+ * @desc    List all doctors (admin only)
+ * @route   GET /api/auth/doctors
+ * @access  Private (Admin)
+ */
+const getDoctors = async (req, res, next) => {
+    try {
+        const doctors = await Doctor.find().select('-password').sort({ createdAt: -1 });
+        res.json({ success: true, data: doctors });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * @desc    Delete a doctor (admin only)
+ * @route   DELETE /api/auth/doctors/:id
+ * @access  Private (Admin)
+ */
+const deleteDoctor = async (req, res, next) => {
+    try {
+        const doctor = await Doctor.findByIdAndDelete(req.params.id);
+        if (!doctor) {
+            return res.status(404).json({ success: false, message: 'Doctor not found' });
+        }
+        res.json({ success: true, message: 'Doctor removed successfully' });
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
     registerUser,
     registerAdmin,
@@ -285,4 +316,6 @@ module.exports = {
     loginUser,
     getProfile,
     updateProfile,
+    getDoctors,
+    deleteDoctor,
 };

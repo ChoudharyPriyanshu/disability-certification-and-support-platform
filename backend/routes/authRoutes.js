@@ -7,6 +7,8 @@ const {
     loginUser,
     getProfile,
     updateProfile,
+    getDoctors,
+    deleteDoctor,
 } = require('../controllers/authController');
 const { protect, authorize } = require('../middleware/auth');
 
@@ -19,5 +21,7 @@ router.post('/admin/register', registerAdmin);
 router.get('/profile', protect, getProfile);
 router.put('/profile', protect, updateProfile);
 router.post('/doctor/register', protect, authorize('ADMIN'), registerDoctor);
+router.get('/doctors', protect, authorize('ADMIN'), getDoctors);
+router.delete('/doctors/:id', protect, authorize('ADMIN'), deleteDoctor);
 
 module.exports = router;
