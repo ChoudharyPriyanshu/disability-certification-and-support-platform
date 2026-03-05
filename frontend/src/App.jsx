@@ -15,6 +15,7 @@ import ApplicationDetail from './pages/user/ApplicationDetail'
 import MyCertificates from './pages/user/MyCertificates'
 import SchemesHub from './pages/user/SchemesHub'
 import AssistiveEquipment from './pages/user/AssistiveEquipment'
+import MyOrders from './pages/user/MyOrders'
 
 // Admin pages
 import AdminDashboard from './pages/admin/AdminDashboard'
@@ -73,6 +74,9 @@ const App = () => {
           } />
           <Route path="/equipment" element={
             <ProtectedRoute roles={['PWD_USER']}><AssistiveEquipment /></ProtectedRoute>
+          } />
+          <Route path="/orders" element={
+            <ProtectedRoute roles={['PWD_USER']}><MyOrders /></ProtectedRoute>
           } />
 
           {/* Admin */}
