@@ -154,6 +154,26 @@ const Login = () => {
                 </p>
             )}
 
+            {form.role === 'ADMIN' && (
+                <p style={{ textAlign: 'center', marginTop: '20px', fontSize: '14px', color: 'var(--color-slate-500)' }}>
+                    New Medical Authority?{' '}
+                    <Link to="/register/authority" style={{ fontWeight: 600, color: 'var(--color-green-700)' }}>
+                        Register your institution
+                    </Link>
+                </p>
+            )}
+
+            {form.role === 'DOCTOR' && (
+                <div style={{
+                    marginTop: '20px', padding: '12px 16px', borderRadius: 'var(--radius-md)',
+                    background: 'var(--color-ivory-dark)', border: '1px solid var(--border-color)',
+                    fontSize: '13px', color: 'var(--color-slate-500)', textAlign: 'center', lineHeight: 1.55,
+                }}>
+                    Doctor accounts are created by the <strong style={{ color: 'var(--color-slate-700)' }}>Medical Authority</strong>.<br />
+                    Contact your district medical officer to get registered.
+                </div>
+            )}
+
             <p style={{ marginTop: '24px', fontSize: '12px', color: 'var(--color-slate-400)', textAlign: 'center', lineHeight: 1.6 }}>
                 By signing in, you agree to the terms of use under the<br />
                 Information Technology Act, 2000.

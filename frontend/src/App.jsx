@@ -21,6 +21,8 @@ import MyOrders from './pages/user/MyOrders'
 import AdminDashboard from './pages/admin/AdminDashboard'
 import AdminApplications from './pages/admin/AdminApplications'
 import AdminApplicationDetail from './pages/admin/AdminApplicationDetail'
+import RegisterDoctor from './pages/admin/RegisterDoctor'
+import AdminRegister from './pages/auth/AdminRegister'
 
 // Doctor pages
 import DoctorDashboard from './pages/doctor/DoctorDashboard'
@@ -52,6 +54,7 @@ const App = () => {
           {/* Public */}
           <Route path="/verify" element={<VerifyCertificate />} />
           <Route path="/verify/:hash" element={<VerifyCertificate />} />
+          <Route path="/register/authority" element={<AdminRegister />} />
 
           {/* PwD User */}
           <Route path="/dashboard" element={
@@ -88,6 +91,9 @@ const App = () => {
           } />
           <Route path="/admin/applications/:id" element={
             <ProtectedRoute roles={['ADMIN']}><AdminApplicationDetail /></ProtectedRoute>
+          } />
+          <Route path="/admin/doctors/register" element={
+            <ProtectedRoute roles={['ADMIN']}><RegisterDoctor /></ProtectedRoute>
           } />
 
           {/* Doctor */}

@@ -2,6 +2,7 @@ import api from '../utils/api'
 
 export const authService = {
     register: (data) => api.post('/auth/register', data),
+    registerAdmin: (data) => api.post('/auth/admin/register', data),
     login: (data) => api.post('/auth/login', data),
     getProfile: () => api.get('/auth/profile'),
     updateProfile: (data) => api.put('/auth/profile', data),

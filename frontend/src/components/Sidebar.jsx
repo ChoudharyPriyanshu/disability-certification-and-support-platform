@@ -21,6 +21,7 @@ const navConfig = {
         { to: '/admin/applications', icon: ClipboardList, label: 'Applications' },
         { to: '/admin/certificates', icon: Award, label: 'Certificates' },
         { to: '/admin/doctors', icon: Stethoscope, label: 'Doctors' },
+        { to: '/admin/doctors/register', icon: Users, label: 'Register Doctor' },
         { to: '/admin/schemes', icon: BookOpen, label: 'Schemes' },
         { to: '/admin/products', icon: ShoppingBag, label: 'Products' },
     ],
