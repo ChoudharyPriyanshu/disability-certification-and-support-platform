@@ -26,30 +26,15 @@ const AdminApplicationDetail = () => {
     const [certLoading, setCertLoading] = useState(false)
 
     useEffect(() => {
+        // Fetch application + doctors in parallel
         Promise.all([
             applicationService.getById(id),
-            api.get('/auth/doctor/list').catch(() => ({ data: { data: [] } })),
+            api.get('/auth/doctors'),
         ]).then(([appRes, doctorRes]) => {
             setApp(appRes.data.data)
             setDoctors(doctorRes.data.data || [])
         }).catch(console.error).finally(() => setLoading(false))
     }, [id])
-
-    const loadDoctors = async () => {
-        try {
-            const res = await api.get('/auth/doctor/list')
-            setDoctors(res.data.data || [])
-        } catch { }
-    }
-
-    const fetchDoctors = async () => {
-        try {
-            const res = await api.get('/auth/doctors')
-            setDoctors(res.data.data || [])
-        } catch { }
-    }
-
-    useEffect(() => { fetchDoctors() }, [])
 
     const refresh = async () => {
         const res = await applicationService.getById(id)
