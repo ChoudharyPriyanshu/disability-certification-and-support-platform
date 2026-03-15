@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { doctorService } from '../../services/apiServices'
 import DashboardLayout from '../../layouts/DashboardLayout'
-import { AlertCircle, CheckCircle } from 'lucide-react'
+import { AlertCircle, CheckCircle, FileText, Download, Eye } from 'lucide-react'
 import { motion } from 'framer-motion'
 import toast from 'react-hot-toast'
 
@@ -96,6 +96,54 @@ const CaseDetail = () => {
                         <div className="alert alert-info" style={{ marginTop: '12px' }}>
                             <AlertCircle size={15} style={{ flexShrink: 0 }} />
                             <span>Assessment scheduled for <strong>{new Date(caseData.assessmentDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</strong></span>
+                        </div>
+                    )}
+                </div>
+
+                {/* Documents uploaded by patient */}
+                <div className="card">
+                    <h3 style={{ fontSize: '1rem', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <FileText size={16} color="var(--color-slate-500)" />
+                        Uploaded Documents
+                        <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-slate-400)', marginLeft: '4px' }}>
+                            ({caseData.documents?.length || 0})
+                        </span>
+                    </h3>
+                    {!caseData.documents?.length ? (
+                        <p style={{ fontSize: '13.5px', color: 'var(--color-slate-400)', fontStyle: 'italic' }}>
+                            No documents uploaded by the patient.
+                        </p>
+                    ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            {caseData.documents.map((doc, i) => (
+                                <div key={i} className="card-inset" style={{
+                                    display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 14px',
+                                }}>
+                                    <FileText size={16} color="var(--color-green-600)" style={{ flexShrink: 0 }} />
+                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                        <div style={{ fontSize: '13.5px', fontWeight: 600, color: 'var(--color-slate-800)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                            {doc.name}
+                                        </div>
+                                        {doc.type && (
+                                            <div style={{ fontSize: '11px', color: 'var(--color-slate-400)', textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: '1px' }}>
+                                                {doc.type.replace(/_/g, ' ')}
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
+                                        <a href={doc.url} target="_blank" rel="noreferrer"
+                                            className="btn btn-ghost btn-sm"
+                                            style={{ padding: '5px 10px', fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                            <Eye size={13} /> View
+                                        </a>
+                                        <a href={doc.url} download={doc.name}
+                                            className="btn btn-ghost btn-sm"
+                                            style={{ padding: '5px 10px', fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                            <Download size={13} />
+                                        </a>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
                     )}
                 </div>
