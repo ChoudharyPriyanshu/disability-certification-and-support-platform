@@ -1,9 +1,20 @@
-import { Bell, Menu } from 'lucide-react'
+import { Bell, Menu, ArrowLeft } from 'lucide-react'
+import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import Sidebar from '../components/Sidebar'
 
 const DashboardLayout = ({ children, pageTitle, pageSubtitle }) => {
     const { user, role } = useAuth()
+    const location = useLocation()
+
+    const dashboardMap = {
+        PWD_USER: '/dashboard',
+        ADMIN: '/admin/dashboard',
+        DOCTOR: '/doctor/dashboard',
+    }
+
+    const dashboardPath = dashboardMap[role] || '/dashboard'
+    const isDashboard = location.pathname === dashboardPath
 
     const bgMap = {
         PWD_USER: 'var(--color-ivory)',
@@ -18,17 +29,36 @@ const DashboardLayout = ({ children, pageTitle, pageSubtitle }) => {
             <div className="dashboard-main">
                 {/* Top bar */}
                 <header className="dashboard-topbar">
-                    <div>
-                        {pageTitle && (
-                            <h2 style={{ fontSize: '1.0625rem', fontFamily: 'var(--font-serif)', fontWeight: 600, color: 'var(--color-slate-900)' }}>
-                                {pageTitle}
-                            </h2>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                        {!isDashboard && (
+                            <Link
+                                title="Back to Dashboard"
+                                to={dashboardPath}
+                                className="btn btn-ghost btn-sm"
+                                style={{
+                                    width: '32px',
+                                    height: '32px',
+                                    padding: 0,
+                                    borderRadius: '50%',
+                                    justifyContent: 'center',
+                                    color: 'var(--color-slate-400)'
+                                }}
+                            >
+                                <ArrowLeft size={18} />
+                            </Link>
                         )}
-                        {pageSubtitle && (
-                            <p style={{ fontSize: '12px', color: 'var(--color-slate-400)', marginTop: '1px' }}>
-                                {pageSubtitle}
-                            </p>
-                        )}
+                        <div>
+                            {pageTitle && (
+                                <h2 style={{ fontSize: '1.0625rem', fontFamily: 'var(--font-serif)', fontWeight: 600, color: 'var(--color-slate-900)' }}>
+                                    {pageTitle}
+                                </h2>
+                            )}
+                            {pageSubtitle && (
+                                <p style={{ fontSize: '12px', color: 'var(--color-slate-400)', marginTop: '1px' }}>
+                                    {pageSubtitle}
+                                </p>
+                            )}
+                        </div>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                         <div style={{
