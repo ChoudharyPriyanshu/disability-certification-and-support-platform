@@ -8,7 +8,7 @@ require('dotenv').config();
 
 const { errorHandler } = require('./middleware/errorHandler');
 
-// Route imports
+// Route imports (imports)
 const authRoutes = require('./routes/authRoutes');
 const applicationRoutes = require('./routes/applicationRoutes');
 const doctorRoutes = require('./routes/doctorRoutes');
