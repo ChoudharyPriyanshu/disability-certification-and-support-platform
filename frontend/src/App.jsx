@@ -16,6 +16,7 @@ import MyCertificates from './pages/user/MyCertificates'
 import SchemesHub from './pages/user/SchemesHub'
 import AssistiveEquipment from './pages/user/AssistiveEquipment'
 import MyOrders from './pages/user/MyOrders'
+import Profile from './pages/user/Profile'
 
 // Admin pages
 import AdminDashboard from './pages/admin/AdminDashboard'
@@ -122,6 +123,11 @@ const App = () => {
           } />
           <Route path="/doctor/cases/:id" element={
             <ProtectedRoute roles={['DOCTOR']}><CaseDetail /></ProtectedRoute>
+          } />
+
+          {/* Profile - For all roles */}
+          <Route path="/profile" element={
+            <ProtectedRoute roles={['PWD_USER', 'ADMIN', 'DOCTOR']}><Profile /></ProtectedRoute>
           } />
 
           {/* Fallback */}

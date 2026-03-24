@@ -61,15 +61,22 @@ const DashboardLayout = ({ children, pageTitle, pageSubtitle }) => {
                         </div>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <Link to="/profile" title="View Profile" style={{ textDecoration: 'none' }}>
                         <div style={{
                             width: '34px', height: '34px', borderRadius: '50%',
                             background: 'var(--color-green-700)', display: 'flex',
                             alignItems: 'center', justifyContent: 'center',
                             color: 'white', fontFamily: 'var(--font-serif)',
-                            fontSize: '14px', fontWeight: 700
-                        }}>
+                            fontSize: '14px', fontWeight: 700,
+                            cursor: 'pointer',
+                            transition: 'transform 0.15s'
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.08)'}
+                        onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                        >
                             {user?.name?.charAt(0)?.toUpperCase()}
                         </div>
+                    </Link>
                     </div>
                 </header>
 
