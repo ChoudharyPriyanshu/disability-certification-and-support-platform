@@ -81,10 +81,10 @@ const submitEvaluation = async (req, res, next) => {
             });
         }
 
-        if (!['DOCTOR_ASSIGNED', 'ASSESSMENT_SCHEDULED'].includes(application.status)) {
+        if (application.status !== 'ASSESSMENT_SCHEDULED') {
             return res.status(400).json({
                 success: false,
-                message: `Cannot submit evaluation — current status: ${application.status}`,
+                message: `Cannot submit evaluation — assessment must be scheduled first (Current status: ${application.status})`,
             });
         }
 

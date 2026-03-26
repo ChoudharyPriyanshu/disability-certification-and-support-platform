@@ -48,6 +48,25 @@ const CaseDetail = () => {
         setFiles((prev) => prev.filter((_, i) => i !== index))
     }
 
+    const handleVerifyDoc = async (docId, status) => {
+        let remarks = ''
+        if (status === 'REJECTED') {
+            remarks = window.prompt('Please enter reason for rejection:')
+            if (remarks === null) return // Cancelled
+        }
+
+        setProcessingDoc(docId)
+        try {
+            const res = await doctorService.verifyDocument(id, docId, { status, remarks })
+            setCaseData(res.data.data)
+            toast.success(`Document ${status.toLowerCase()} successfully`)
+        } catch (err) {
+            toast.error(err.response?.data?.message || 'Verification failed')
+        } finally {
+            setProcessingDoc(null)
+        }
+    }
+
     const handleSubmit = async (e) => {
         e.preventDefault()
         if (!form.disabilityType || !form.disabilityPercentage) {
@@ -132,33 +151,79 @@ const CaseDetail = () => {
                     ) : (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                             {caseData.documents.map((doc, i) => (
-                                <div key={i} className="card-inset" style={{
-                                    display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 14px',
-                                }}>
-                                    <FileText size={16} color="var(--color-green-600)" style={{ flexShrink: 0 }} />
-                                    <div style={{ flex: 1, minWidth: 0 }}>
-                                        <div style={{ fontSize: '13.5px', fontWeight: 600, color: 'var(--color-slate-800)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                            {doc.name}
+                                    <div key={i} className="card-inset" style={{
+                                        display: 'flex', flexDirection: 'column', gap: '10px', padding: '12px 14px',
+                                    }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                            <FileText size={16} color="var(--color-green-600)" style={{ flexShrink: 0 }} />
+                                            <div style={{ flex: 1, minWidth: 0 }}>
+                                                <div style={{ fontSize: '13.5px', fontWeight: 600, color: 'var(--color-slate-800)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                    {doc.name}
+                                                </div>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                    {doc.type && (
+                                                        <div style={{ fontSize: '11px', color: 'var(--color-slate-400)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                                            {doc.type.replace(/_/g, ' ')}
+                                                        </div>
+                                                    )}
+                                                    <div style={{
+                                                        fontSize: '10px', fontWeight: 700, padding: '2px 6px', borderRadius: '4px',
+                                                        background: doc.status === 'APPROVED' ? 'var(--color-green-100)' : doc.status === 'REJECTED' ? 'var(--color-rose-100)' : 'var(--color-slate-100)',
+                                                        color: doc.status === 'APPROVED' ? 'var(--color-green-700)' : doc.status === 'REJECTED' ? 'var(--color-rose-700)' : 'var(--color-slate-600)',
+                                                    }}>
+                                                        {doc.status || 'PENDING'}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
+                                                <a href={doc.url} target="_blank" rel="noreferrer"
+                                                    className="btn btn-ghost btn-sm"
+                                                    style={{ padding: '5px 10px', fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                                    <Eye size={13} />
+                                                </a>
+                                                <a href={doc.url} download={doc.name}
+                                                    className="btn btn-ghost btn-sm"
+                                                    style={{ padding: '5px 10px', fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                                    <Download size={13} />
+                                                </a>
+                                            </div>
                                         </div>
-                                        {doc.type && (
-                                            <div style={{ fontSize: '11px', color: 'var(--color-slate-400)', textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: '1px' }}>
-                                                {doc.type.replace(/_/g, ' ')}
+
+                                        {doc.doctorRemarks && (
+                                            <div style={{ fontSize: '12px', padding: '8px 12px', background: 'var(--surface-secondary)', borderRadius: '4px', color: 'var(--color-slate-600)', borderLeft: '2px solid var(--color-rose-400)' }}>
+                                                <strong>Doctor's Remarks:</strong> {doc.doctorRemarks}
+                                            </div>
+                                        )}
+
+                                        {!submitted && (
+                                            <div style={{ display: 'flex', gap: '8px', borderTop: '1px solid var(--border-color)', paddingTop: '10px', marginTop: '2px' }}>
+                                                <button type="button"
+                                                    onClick={() => handleVerifyDoc(doc._id, 'APPROVED')}
+                                                    disabled={processingDoc === doc._id || doc.status === 'APPROVED'}
+                                                    className="btn btn-sm"
+                                                    style={{ 
+                                                        flex: 1, fontSize: '11px', padding: '6px', justifyContent: 'center',
+                                                        background: doc.status === 'APPROVED' ? 'var(--color-green-50)' : 'var(--color-white)',
+                                                        borderColor: doc.status === 'APPROVED' ? 'var(--color-green-200)' : 'var(--border-color)',
+                                                        color: doc.status === 'APPROVED' ? 'var(--color-green-700)' : 'var(--color-slate-600)'
+                                                    }}>
+                                                    {processingDoc === doc._id ? <span className="spinner spinner-sm" /> : 'Approve'}
+                                                </button>
+                                                <button type="button"
+                                                    onClick={() => handleVerifyDoc(doc._id, 'REJECTED')}
+                                                    disabled={processingDoc === doc._id || doc.status === 'REJECTED'}
+                                                    className="btn btn-sm"
+                                                    style={{ 
+                                                        flex: 1, fontSize: '11px', padding: '6px', justifyContent: 'center',
+                                                        background: doc.status === 'REJECTED' ? 'var(--color-rose-50)' : 'var(--color-white)',
+                                                        borderColor: doc.status === 'REJECTED' ? 'var(--color-rose-200)' : 'var(--border-color)',
+                                                        color: doc.status === 'REJECTED' ? 'var(--color-rose-700)' : 'var(--color-slate-600)'
+                                                    }}>
+                                                    Reject
+                                                </button>
                                             </div>
                                         )}
                                     </div>
-                                    <div style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
-                                        <a href={doc.url} target="_blank" rel="noreferrer"
-                                            className="btn btn-ghost btn-sm"
-                                            style={{ padding: '5px 10px', fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                                            <Eye size={13} /> View
-                                        </a>
-                                        <a href={doc.url} download={doc.name}
-                                            className="btn btn-ghost btn-sm"
-                                            style={{ padding: '5px 10px', fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                                            <Download size={13} />
-                                        </a>
-                                    </div>
-                                </div>
                             ))}
                         </div>
                     )}
@@ -216,103 +281,114 @@ const CaseDetail = () => {
                         <p style={{ fontSize: '13.5px', color: 'var(--color-slate-400)', marginBottom: '20px' }}>
                             Complete this form after the physical assessment. This information will be used for the final certificate.
                         </p>
-                        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
-                            <div className="form-field">
-                                <label className="form-label">Confirmed Disability Type</label>
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
-                                    {DISABILITY_TYPES.map((type) => (
-                                        <button key={type} type="button"
-                                            onClick={() => setForm((f) => ({ ...f, disabilityType: type }))}
-                                            style={{
-                                                padding: '8px 12px', borderRadius: 'var(--radius-md)',
-                                                border: `1.5px solid ${form.disabilityType === type ? 'var(--color-green-600)' : 'var(--border-color)'}`,
-                                                background: form.disabilityType === type ? 'var(--color-green-50)' : 'var(--surface-secondary)',
-                                                color: form.disabilityType === type ? 'var(--color-green-700)' : 'var(--color-slate-600)',
-                                                fontSize: '13px', fontWeight: 600, fontFamily: 'var(--font-sans)', cursor: 'pointer', textAlign: 'left',
-                                            }}>
-                                            {type}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                            <div className="form-field">
-                                <label className="form-label" htmlFor="pct">Disability Percentage</label>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                                    <input id="pct" type="range" min={0} max={100} step={5}
-                                        value={form.disabilityPercentage || 0}
-                                        onChange={(e) => setForm((f) => ({ ...f, disabilityPercentage: e.target.value }))}
-                                        style={{ flex: 1, accentColor: 'var(--color-green-600)' }} />
-                                    <div style={{ fontFamily: 'var(--font-serif)', fontSize: '1.5rem', fontWeight: 700, color: 'var(--color-slate-900)', minWidth: '52px', textAlign: 'right' }}>
-                                        {form.disabilityPercentage || 0}%
-                                    </div>
-                                </div>
-                                <input type="number" className="form-input" min={0} max={100}
-                                    value={form.disabilityPercentage}
-                                    onChange={(e) => setForm((f) => ({ ...f, disabilityPercentage: e.target.value }))}
-                                    placeholder="Or enter exact percentage"
-                                    style={{ marginTop: '6px' }} />
-                            </div>
-                            <div className="form-field">
-                                <label className="form-label">Supporting Evidence (Photographs & Reports)</label>
-                                <div style={{ 
-                                    border: '2px dashed var(--border-color)', 
-                                    borderRadius: 'var(--radius-md)', 
-                                    padding: '24px', 
-                                    textAlign: 'center',
-                                    background: 'var(--surface-secondary)',
-                                    cursor: 'pointer',
-                                    transition: 'all 0.2s ease'
-                                }}
-                                onClick={() => document.getElementById('evidence-upload').click()}
-                                >
-                                    <input id="evidence-upload" type="file" multiple 
-                                        onChange={handleFileChange}
-                                        style={{ display: 'none' }} 
-                                        accept=".pdf,image/*"
-                                    />
-                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-                                        <div style={{ padding: '10px', background: 'var(--color-white)', borderRadius: '50%', boxShadow: 'var(--shadow-sm)' }}>
-                                            <Download size={20} color="var(--color-slate-400)" />
-                                        </div>
-                                        <div>
-                                            <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--color-slate-700)' }}>Click to upload files</div>
-                                            <div style={{ fontSize: '11px', color: 'var(--color-slate-400)', marginTop: '2px' }}>PNG, JPG or PDF up to 5MB</div>
-                                        </div>
-                                    </div>
-                                </div>
 
-                                {files.length > 0 && (
-                                    <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                        {files.map((file, i) => (
-                                            <div key={i} className="card-inset" style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 12px' }}>
-                                                <FileText size={14} color="var(--color-slate-400)" />
-                                                <div style={{ flex: 1, fontSize: '12.5px', color: 'var(--color-slate-700)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                                    {file.name}
-                                                </div>
-                                                <button type="button" onClick={(e) => { e.stopPropagation(); removeFile(i); }} 
-                                                    style={{ border: 'none', background: 'none', color: 'var(--color-rose-500)', fontSize: '18px', cursor: 'pointer', padding: '0 4px' }}>
-                                                    &times;
-                                                </button>
-                                            </div>
+                        {caseData.status !== 'ASSESSMENT_SCHEDULED' ? (
+                            <div className="alert alert-warning" style={{ marginBottom: 0 }}>
+                                <AlertCircle size={16} />
+                                <div>
+                                    <strong>Evaluation Locked:</strong> You can only submit the final evaluation after the assessment has been scheduled by the administrator.
+                                    <div style={{ fontSize: '12px', marginTop: '4px', opacity: 0.8 }}>Current Status: {caseData.status.replace(/_/g, ' ')}</div>
+                                </div>
+                            </div>
+                        ) : (
+                            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+                                <div className="form-field">
+                                    <label className="form-label">Confirmed Disability Type</label>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
+                                        {DISABILITY_TYPES.map((type) => (
+                                            <button key={type} type="button"
+                                                onClick={() => setForm((f) => ({ ...f, disabilityType: type }))}
+                                                style={{
+                                                    padding: '8px 12px', borderRadius: 'var(--radius-md)',
+                                                    border: `1.5px solid ${form.disabilityType === type ? 'var(--color-green-600)' : 'var(--border-color)'}`,
+                                                    background: form.disabilityType === type ? 'var(--color-green-50)' : 'var(--surface-secondary)',
+                                                    color: form.disabilityType === type ? 'var(--color-green-700)' : 'var(--color-slate-600)',
+                                                    fontSize: '13px', fontWeight: 600, fontFamily: 'var(--font-sans)', cursor: 'pointer', textAlign: 'left',
+                                                }}>
+                                                {type}
+                                            </button>
                                         ))}
                                     </div>
-                                )}
-                            </div>
-                            <div className="form-field">
-                                <label className="form-label" htmlFor="notes">Clinical Notes</label>
-                                <textarea id="notes" className="form-input form-textarea" rows={4}
-                                    placeholder="Describe your clinical findings, assessment observations, and any relevant notes..."
-                                    value={form.notes}
-                                    onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} />
-                            </div>
-                            <div className="alert alert-warning">
-                                <AlertCircle size={15} style={{ flexShrink: 0 }} />
-                                <span>This evaluation is final and will directly determine the disability percentage on the official certificate.</span>
-                            </div>
-                            <button type="submit" className="btn btn-primary" disabled={submitting} style={{ justifyContent: 'center' }}>
-                                {submitting ? <span className="spinner spinner-sm" /> : 'Submit Evaluation'}
-                            </button>
-                        </form>
+                                </div>
+                                <div className="form-field">
+                                    <label className="form-label" htmlFor="pct">Disability Percentage</label>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                                        <input id="pct" type="range" min={0} max={100} step={5}
+                                            value={form.disabilityPercentage || 0}
+                                            onChange={(e) => setForm((f) => ({ ...f, disabilityPercentage: e.target.value }))}
+                                            style={{ flex: 1, accentColor: 'var(--color-green-600)' }} />
+                                        <div style={{ fontFamily: 'var(--font-serif)', fontSize: '1.5rem', fontWeight: 700, color: 'var(--color-slate-900)', minWidth: '52px', textAlign: 'right' }}>
+                                            {form.disabilityPercentage || 0}%
+                                        </div>
+                                    </div>
+                                    <input type="number" className="form-input" min={0} max={100}
+                                        value={form.disabilityPercentage}
+                                        onChange={(e) => setForm((f) => ({ ...f, disabilityPercentage: e.target.value }))}
+                                        placeholder="Or enter exact percentage"
+                                        style={{ marginTop: '6px' }} />
+                                </div>
+                                <div className="form-field">
+                                    <label className="form-label">Supporting Evidence (Photographs & Reports)</label>
+                                    <div style={{ 
+                                        border: '2px dashed var(--border-color)', 
+                                        borderRadius: 'var(--radius-md)', 
+                                        padding: '24px', 
+                                        textAlign: 'center',
+                                        background: 'var(--surface-secondary)',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.2s ease'
+                                    }}
+                                    onClick={() => document.getElementById('evidence-upload').click()}
+                                    >
+                                        <input id="evidence-upload" type="file" multiple 
+                                            onChange={handleFileChange}
+                                            style={{ display: 'none' }} 
+                                            accept=".pdf,image/*"
+                                        />
+                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                                            <div style={{ padding: '10px', background: 'var(--color-white)', borderRadius: '50%', boxShadow: 'var(--shadow-sm)' }}>
+                                                <Download size={20} color="var(--color-slate-400)" />
+                                            </div>
+                                            <div>
+                                                <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--color-slate-700)' }}>Click to upload files</div>
+                                                <div style={{ fontSize: '11px', color: 'var(--color-slate-400)', marginTop: '2px' }}>PNG, JPG or PDF up to 5MB</div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {files.length > 0 && (
+                                        <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                            {files.map((file, i) => (
+                                                <div key={i} className="card-inset" style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 12px' }}>
+                                                    <FileText size={14} color="var(--color-slate-400)" />
+                                                    <div style={{ flex: 1, fontSize: '12.5px', color: 'var(--color-slate-700)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                        {file.name}
+                                                    </div>
+                                                    <button type="button" onClick={(e) => { e.stopPropagation(); removeFile(i); }} 
+                                                        style={{ border: 'none', background: 'none', color: 'var(--color-rose-500)', fontSize: '18px', cursor: 'pointer', padding: '0 4px' }}>
+                                                        &times;
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="form-field">
+                                    <label className="form-label" htmlFor="notes">Clinical Notes</label>
+                                    <textarea id="notes" className="form-input form-textarea" rows={4}
+                                        placeholder="Describe your clinical findings, assessment observations, and any relevant notes..."
+                                        value={form.notes}
+                                        onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} />
+                                </div>
+                                <div className="alert alert-warning">
+                                    <AlertCircle size={15} style={{ flexShrink: 0 }} />
+                                    <span>This evaluation is final and will directly determine the disability percentage on the official certificate.</span>
+                                </div>
+                                <button type="submit" className="btn btn-primary" disabled={submitting} style={{ justifyContent: 'center' }}>
+                                    {submitting ? <span className="spinner spinner-sm" /> : 'Submit Evaluation'}
+                                </button>
+                            </form>
+                        )}
                     </div>
                 )}
             </div>

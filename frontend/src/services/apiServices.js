@@ -33,6 +33,7 @@ export const doctorService = {
         const config = data instanceof FormData ? { headers: { 'Content-Type': 'multipart/form-data' } } : {};
         return api.put(`/doctor/cases/${id}/evaluate`, data, config);
     },
+    verifyDocument: (id, docId, data) => api.put(`/doctor/cases/${id}/documents/${docId}/verify`, data),
 }
 
 export const certificateService = {

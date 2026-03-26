@@ -14,5 +14,6 @@ router.use(protect, authorize('DOCTOR'));
 router.get('/cases', getAssignedCases);
 router.get('/cases/:id', getCaseDetail);
 router.put('/cases/:id/evaluate', upload.array('evidence', 5), submitEvaluation);
+router.put('/cases/:id/documents/:docId/verify', verifyDocument);
 
 module.exports = router;

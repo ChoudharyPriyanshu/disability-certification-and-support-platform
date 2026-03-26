@@ -50,6 +50,12 @@ const applicationSchema = new mongoose.Schema(
                     type: String,
                     enum: ['medical_report', 'id_proof', 'photo', 'address_proof', 'other'],
                 },
+                status: {
+                    type: String,
+                    enum: ['PENDING', 'APPROVED', 'REJECTED'],
+                    default: 'PENDING',
+                },
+                doctorRemarks: String,
                 uploadedAt: { type: Date, default: Date.now },
             },
         ],
