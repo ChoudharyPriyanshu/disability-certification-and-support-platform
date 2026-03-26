@@ -4,6 +4,7 @@ const {
     getAssignedCases,
     getCaseDetail,
     submitEvaluation,
+    verifyDocument,
 } = require('../controllers/doctorController');
 const { protect, authorize } = require('../middleware/auth');
 const upload = require('../middleware/upload');

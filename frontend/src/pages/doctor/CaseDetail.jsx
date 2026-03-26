@@ -20,6 +20,7 @@ const CaseDetail = () => {
     const [submitted, setSubmitted] = useState(false)
     const [form, setForm] = useState({ disabilityType: '', disabilityPercentage: '', notes: '' })
     const [files, setFiles] = useState([])
+    const [processingDoc, setProcessingDoc] = useState(null)
 
     useEffect(() => {
         doctorService.getCaseDetail(id)

@@ -139,8 +139,65 @@ const submitEvaluation = async (req, res, next) => {
     }
 };
 
+/**
+ * @desc    Verify applicant document
+ * @route   PUT /api/doctor/cases/:id/documents/:docId/verify
+ * @access  Private (Doctor)
+ */
+const verifyDocument = async (req, res, next) => {
+    try {
+        const { status, remarks } = req.body;
+        const { id, docId } = req.params;
+
+        if (!['APPROVED', 'REJECTED'].includes(status)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid status. Must be APPROVED or REJECTED',
+            });
+        }
+
+        const application = await Application.findById(id);
+
+        if (!application) {
+            return res.status(404).json({
+                success: false,
+                message: 'Case not found',
+            });
+        }
+
+        // Ensure doctor is assigned to this case
+        if (application.assignedDoctor.toString() !== req.user._id.toString()) {
+            return res.status(403).json({
+                success: false,
+                message: 'Not authorized for this case',
+            });
+        }
+
+        const doc = application.documents.id(docId);
+        if (!doc) {
+            return res.status(404).json({
+                success: false,
+                message: 'Document not found',
+            });
+        }
+
+        doc.status = status;
+        doc.doctorRemarks = remarks || '';
+        await application.save();
+
+        res.json({
+            success: true,
+            message: `Document ${status.toLowerCase()} successfully`,
+            data: application,
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
     getAssignedCases,
     getCaseDetail,
     submitEvaluation,
+    verifyDocument,
 };
