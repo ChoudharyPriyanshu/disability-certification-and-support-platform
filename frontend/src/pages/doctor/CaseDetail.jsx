@@ -19,6 +19,7 @@ const CaseDetail = () => {
     const [submitting, setSubmitting] = useState(false)
     const [submitted, setSubmitted] = useState(false)
     const [form, setForm] = useState({ disabilityType: '', disabilityPercentage: '', notes: '' })
+    const [files, setFiles] = useState([])
 
     useEffect(() => {
         doctorService.getCaseDetail(id)
@@ -38,6 +39,15 @@ const CaseDetail = () => {
             .finally(() => setLoading(false))
     }, [id])
 
+    const handleFileChange = (e) => {
+        const selectedFiles = Array.from(e.target.files)
+        setFiles((prev) => [...prev, ...selectedFiles])
+    }
+
+    const removeFile = (index) => {
+        setFiles((prev) => prev.filter((_, i) => i !== index))
+    }
+
     const handleSubmit = async (e) => {
         e.preventDefault()
         if (!form.disabilityType || !form.disabilityPercentage) {
@@ -45,11 +55,17 @@ const CaseDetail = () => {
             return
         }
         setSubmitting(true)
+
+        const formData = new FormData()
+        formData.append('disabilityType', form.disabilityType)
+        formData.append('disabilityPercentage', form.disabilityPercentage)
+        formData.append('notes', form.notes)
+        files.forEach((file) => {
+            formData.append('evidence', file)
+        })
+
         try {
-            await doctorService.evaluate(id, {
-                ...form,
-                disabilityPercentage: parseFloat(form.disabilityPercentage),
-            })
+            await doctorService.evaluate(id, formData)
             setSubmitted(true)
             toast.success('Evaluation submitted successfully')
             navigate('/doctor/cases')
@@ -160,10 +176,39 @@ const CaseDetail = () => {
                         <h3 style={{ fontSize: '1.0625rem', color: 'var(--color-green-800)', marginBottom: '8px' }}>
                             Evaluation Submitted
                         </h3>
-                        <p style={{ fontSize: '13.5px', color: 'var(--color-green-700)' }}>
+                        <p style={{ fontSize: '13.5px', color: 'var(--color-green-700)', marginBottom: '24px' }}>
                             {form.disabilityType} — {form.disabilityPercentage}% disability<br />
                             Your evaluation has been sent to the medical authority.
                         </p>
+                        {caseData.doctorEvaluation?.supportingDocuments?.length > 0 && (
+                            <div style={{ textAlign: 'left', background: 'var(--color-white)', borderRadius: 'var(--radius-md)', padding: '16px', border: '1px solid var(--color-green-200)' }}>
+                                <h4 style={{ fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-slate-400)', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    <FileText size={14} /> Supporting Evidence
+                                </h4>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                    {caseData.doctorEvaluation.supportingDocuments.map((doc, i) => (
+                                        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                            <div style={{ 
+                                                width: '32px', height: '32px', borderRadius: '4px', 
+                                                background: 'var(--color-slate-50)', display: 'flex', 
+                                                alignItems: 'center', justifyContent: 'center', flexShrink: 0 
+                                            }}>
+                                                {doc.type === 'photograph' ? <Eye size={16} color="var(--color-green-600)" /> : <FileText size={16} color="var(--color-blue-600)" />}
+                                            </div>
+                                            <div style={{ flex: 1, minWidth: 0 }}>
+                                                <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--color-slate-700)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                    {doc.name}
+                                                </div>
+                                                <div style={{ fontSize: '11px', color: 'var(--color-slate-400)', textTransform: 'uppercase' }}>{doc.type}</div>
+                                            </div>
+                                            <a href={doc.url} target="_blank" rel="noreferrer" className="btn btn-ghost btn-sm" style={{ padding: '4px 8px', fontSize: '11px' }}>
+                                                View
+                                            </a>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </motion.div>
                 ) : (
                     <div className="card">
@@ -206,6 +251,52 @@ const CaseDetail = () => {
                                     onChange={(e) => setForm((f) => ({ ...f, disabilityPercentage: e.target.value }))}
                                     placeholder="Or enter exact percentage"
                                     style={{ marginTop: '6px' }} />
+                            </div>
+                            <div className="form-field">
+                                <label className="form-label">Supporting Evidence (Photographs & Reports)</label>
+                                <div style={{ 
+                                    border: '2px dashed var(--border-color)', 
+                                    borderRadius: 'var(--radius-md)', 
+                                    padding: '24px', 
+                                    textAlign: 'center',
+                                    background: 'var(--surface-secondary)',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s ease'
+                                }}
+                                onClick={() => document.getElementById('evidence-upload').click()}
+                                >
+                                    <input id="evidence-upload" type="file" multiple 
+                                        onChange={handleFileChange}
+                                        style={{ display: 'none' }} 
+                                        accept=".pdf,image/*"
+                                    />
+                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                                        <div style={{ padding: '10px', background: 'var(--color-white)', borderRadius: '50%', boxShadow: 'var(--shadow-sm)' }}>
+                                            <Download size={20} color="var(--color-slate-400)" />
+                                        </div>
+                                        <div>
+                                            <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--color-slate-700)' }}>Click to upload files</div>
+                                            <div style={{ fontSize: '11px', color: 'var(--color-slate-400)', marginTop: '2px' }}>PNG, JPG or PDF up to 5MB</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {files.length > 0 && (
+                                    <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                        {files.map((file, i) => (
+                                            <div key={i} className="card-inset" style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 12px' }}>
+                                                <FileText size={14} color="var(--color-slate-400)" />
+                                                <div style={{ flex: 1, fontSize: '12.5px', color: 'var(--color-slate-700)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                    {file.name}
+                                                </div>
+                                                <button type="button" onClick={(e) => { e.stopPropagation(); removeFile(i); }} 
+                                                    style={{ border: 'none', background: 'none', color: 'var(--color-rose-500)', fontSize: '18px', cursor: 'pointer', padding: '0 4px' }}>
+                                                    &times;
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                             <div className="form-field">
                                 <label className="form-label" htmlFor="notes">Clinical Notes</label>

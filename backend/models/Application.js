@@ -85,6 +85,17 @@ const applicationSchema = new mongoose.Schema(
                 max: 100,
             },
             notes: String,
+            supportingDocuments: [
+                {
+                    name: String,
+                    url: String,
+                    type: {
+                        type: String,
+                        enum: ['photograph', 'report', 'other'],
+                    },
+                    uploadedAt: { type: Date, default: Date.now },
+                },
+            ],
             submittedAt: Date,
         },
 

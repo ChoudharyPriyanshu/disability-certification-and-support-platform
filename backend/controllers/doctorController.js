@@ -95,10 +95,32 @@ const submitEvaluation = async (req, res, next) => {
             });
         }
 
+        // Handle supporting documents if any
+        const supportingDocuments = [];
+        if (req.files && req.files.length > 0) {
+            req.files.forEach((file) => {
+                // Determine type based on mimetype or other logic
+                let type = 'other';
+                if (file.mimetype.startsWith('image/')) {
+                    type = 'photograph';
+                } else if (file.mimetype === 'application/pdf') {
+                    type = 'report';
+                }
+
+                supportingDocuments.push({
+                    name: file.originalname,
+                    url: `/uploads/${req.user._id}/${file.filename}`, // Assuming this is how URLs are constructed
+                    type,
+                    uploadedAt: new Date(),
+                });
+            });
+        }
+
         application.doctorEvaluation = {
             disabilityType: disabilityType || application.disabilityType,
             disabilityPercentage,
             notes,
+            supportingDocuments,
             submittedAt: new Date(),
         };
 

@@ -29,7 +29,10 @@ export const applicationService = {
 export const doctorService = {
     getCases: () => api.get('/doctor/cases'),
     getCaseDetail: (id) => api.get(`/doctor/cases/${id}`),
-    evaluate: (id, data) => api.put(`/doctor/cases/${id}/evaluate`, data),
+    evaluate: (id, data) => {
+        const config = data instanceof FormData ? { headers: { 'Content-Type': 'multipart/form-data' } } : {};
+        return api.put(`/doctor/cases/${id}/evaluate`, data, config);
+    },
 }
 
 export const certificateService = {
