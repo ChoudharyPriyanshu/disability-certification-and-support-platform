@@ -2,12 +2,12 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { doctorService } from '../../services/apiServices'
 import DashboardLayout from '../../layouts/DashboardLayout'
-import { Stethoscope, ChevronRight, Clock } from 'lucide-react'
+import { Stethoscope, ChevronRight, Clock, XCircle } from 'lucide-react'
 import { motion } from 'framer-motion'
 
 const BADGE_MAP = {
     DOCTOR_ASSIGNED: 'badge-assigned', ASSESSMENT_SCHEDULED: 'badge-scheduled',
-    ASSESSMENT_COMPLETED: 'badge-completed',
+    ASSESSMENT_COMPLETED: 'badge-completed', REJECTED: 'badge-rejected',
 }
 
 const DoctorDashboard = () => {
@@ -21,18 +21,20 @@ const DoctorDashboard = () => {
             .finally(() => setLoading(false))
     }, [])
 
-    const pending = cases.filter((c) => c.status !== 'ASSESSMENT_COMPLETED')
+    const pending = cases.filter((c) => !['ASSESSMENT_COMPLETED', 'REJECTED'].includes(c.status))
     const completed = cases.filter((c) => c.status === 'ASSESSMENT_COMPLETED')
+    const rejected = cases.filter((c) => c.status === 'REJECTED')
 
     return (
         <DashboardLayout pageTitle="Doctor Dashboard" pageSubtitle="Your assigned assessment cases">
             <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                 {/* Stats */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
                     {[
                         { value: cases.length, label: 'Total Cases', color: 'var(--color-green-600)' },
-                        { value: pending.length, label: 'Pending Evaluation', color: 'var(--color-warning)' },
+                        { value: pending.length, label: 'Pending', color: 'var(--color-warning)' },
                         { value: completed.length, label: 'Completed', color: 'var(--color-success)' },
+                        { value: rejected.length, label: 'Rejected', color: 'var(--color-danger)' },
                     ].map(({ value, label, color }, i) => (
                         <motion.div key={label} className="stat-card" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.07 }}>
                             <div className="stat-icon" style={{ background: `color-mix(in srgb, ${color} 12%, white)` }}>

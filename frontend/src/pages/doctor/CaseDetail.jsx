@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { doctorService } from '../../services/apiServices'
 import DashboardLayout from '../../layouts/DashboardLayout'
-import { AlertCircle, CheckCircle, FileText, Download, Eye } from 'lucide-react'
+import { AlertCircle, CheckCircle, FileText, Download, Eye, XCircle } from 'lucide-react'
 import { motion } from 'framer-motion'
 import toast from 'react-hot-toast'
 
@@ -100,6 +100,7 @@ const CaseDetail = () => {
     if (!caseData) return <DashboardLayout pageTitle="Case Assessment"><div className="alert alert-danger">Case not found</div></DashboardLayout>
 
     const patient = caseData.applicant
+    const isRejected = caseData.status === 'REJECTED'
 
     return (
         <DashboardLayout pageTitle="Case Assessment" pageSubtitle={`Patient: ${caseData.applicantName}`}>
@@ -196,7 +197,7 @@ const CaseDetail = () => {
                                             </div>
                                         )}
 
-                                        {!submitted && (
+                                        {!submitted && !isRejected && (
                                             <div style={{ display: 'flex', gap: '8px', borderTop: '1px solid var(--border-color)', paddingTop: '10px', marginTop: '2px' }}>
                                                 <button type="button"
                                                     onClick={() => handleVerifyDoc(doc._id, 'APPROVED')}
@@ -230,8 +231,19 @@ const CaseDetail = () => {
                     )}
                 </div>
 
+                {/* Rejection Notice */}
+                {isRejected && (
+                    <div className="card" style={{ background: '#fef2f2', borderColor: '#fecaca', textAlign: 'center', padding: '32px 24px' }}>
+                        <XCircle size={40} color="var(--color-danger)" style={{ margin: '0 auto 12px' }} />
+                        <h3 style={{ fontSize: '1rem', color: 'var(--color-danger)', marginBottom: '8px' }}>Application Rejected</h3>
+                        <p style={{ fontSize: '13px', color: 'var(--color-slate-500)', margin: 0 }}>
+                            This application has been rejected by the medical authority. No further evaluation is required.
+                        </p>
+                    </div>
+                )}
+
                 {/* Evaluation form */}
-                {submitted ? (
+                {!isRejected && (submitted ? (
                     <motion.div
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
@@ -391,7 +403,7 @@ const CaseDetail = () => {
                             </form>
                         )}
                     </div>
-                )}
+                ))}
             </div>
         </DashboardLayout>
     )

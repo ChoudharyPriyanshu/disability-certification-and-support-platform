@@ -83,11 +83,13 @@ const AdminApplicationDetail = () => {
     if (loading) return <DashboardLayout pageTitle="Application Review"><div style={{ display: 'flex', justifyContent: 'center', padding: '80px' }}><div className="spinner" /></div></DashboardLayout>
     if (!app) return <DashboardLayout pageTitle="Application Review"><div className="alert alert-danger">Application not found</div></DashboardLayout>
 
+    const isRejected = app.status === 'REJECTED'
+    const isApproved = app.status === 'APPROVED'
     const canReview = app.status === 'SUBMITTED'
     const canAssign = ['SUBMITTED', 'UNDER_REVIEW'].includes(app.status)
     const canSchedule = app.status === 'DOCTOR_ASSIGNED'
     const canApprove = app.status === 'ASSESSMENT_COMPLETED'
-    const canGenCert = app.status === 'APPROVED'
+    const canGenCert = isApproved
 
     return (
         <DashboardLayout pageTitle="Application Review" pageSubtitle={`Ref: ${app._id?.slice(-8).toUpperCase()}`}>
@@ -200,17 +202,39 @@ const AdminApplicationDetail = () => {
 
                 {/* Right — actions panel */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                    {/* Remarks input */}
-                    <div className="card">
-                        <h3 style={{ fontSize: '14px', marginBottom: '10px' }}>Remarks / Notes</h3>
-                        <textarea
-                            className="form-input form-textarea"
-                            rows={3}
-                            placeholder="Add remarks for this action..."
-                            value={remarks}
-                            onChange={(e) => setRemarks(e.target.value)}
-                        />
-                    </div>
+
+                    {/* Rejection banner */}
+                    {isRejected && (
+                        <div className="card" style={{ background: '#fef2f2', borderColor: '#fecaca' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
+                                <XCircle size={20} color="var(--color-danger)" />
+                                <h3 style={{ fontSize: '15px', color: 'var(--color-danger)' }}>Application Rejected</h3>
+                            </div>
+                            <p style={{ fontSize: '13px', color: 'var(--color-slate-600)', lineHeight: 1.6, margin: 0 }}>
+                                This application has been rejected. No further actions can be taken.
+                            </p>
+                            {app.adminRemarks && (
+                                <div style={{ marginTop: '12px', padding: '10px 12px', background: 'var(--color-white)', borderRadius: '6px', border: '1px solid #fecaca' }}>
+                                    <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-slate-400)', marginBottom: '4px' }}>Admin Remarks</div>
+                                    <div style={{ fontSize: '13px', color: 'var(--color-slate-700)' }}>{app.adminRemarks}</div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Remarks input — only for non-terminal states */}
+                    {!isRejected && !isApproved && (
+                        <div className="card">
+                            <h3 style={{ fontSize: '14px', marginBottom: '10px' }}>Remarks / Notes</h3>
+                            <textarea
+                                className="form-input form-textarea"
+                                rows={3}
+                                placeholder="Add remarks for this action..."
+                                value={remarks}
+                                onChange={(e) => setRemarks(e.target.value)}
+                            />
+                        </div>
+                    )}
 
                     {/* Doctor assignment */}
                     {canAssign && (
@@ -243,7 +267,7 @@ const AdminApplicationDetail = () => {
                         </div>
                     )}
 
-                    {/* Approve/Reject */}
+                    {/* Approve/Reject — only for non-terminal states */}
                     {(canReview || canApprove) && (
                         <div className="card">
                             <h3 style={{ fontSize: '14px', marginBottom: '10px' }}>Final Decision</h3>
@@ -268,7 +292,7 @@ const AdminApplicationDetail = () => {
                         </div>
                     )}
 
-                    {/* Generate certificate */}
+                    {/* Generate certificate — only for approved */}
                     {canGenCert && (
                         <div className="card" style={{ background: 'var(--color-green-50)', borderColor: 'var(--color-green-200)' }}>
                             <h3 style={{ fontSize: '14px', color: 'var(--color-green-800)', marginBottom: '8px' }}>
