@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { applicationService } from '../../services/apiServices'
 import DashboardLayout from '../../layouts/DashboardLayout'
-import { Search, ChevronRight } from 'lucide-react'
+import { Search, ChevronRight, AlertCircle } from 'lucide-react'
 
 const STATUS_OPTIONS = [
     { value: '', label: 'All' },
@@ -96,9 +96,16 @@ const AdminApplications = () => {
                                         {app.assignedDoctor ? `Dr. ${app.assignedDoctor.name}` : '—'}
                                     </td>
                                     <td>
-                                        <span className={`badge ${BADGE_MAP[app.status]}`}>
-                                            {app.status?.replace(/_/g, ' ')}
-                                        </span>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                            <span className={`badge ${BADGE_MAP[app.status]}`}>
+                                                {app.status?.replace(/_/g, ' ')}
+                                            </span>
+                                            {app.documents?.some(d => d.status === 'REJECTED') && (
+                                                <div title="One or more documents rejected by doctor" style={{ color: 'var(--color-rose-500)', display: 'flex' }}>
+                                                    <AlertCircle size={14} />
+                                                </div>
+                                            )}
+                                        </div>
                                     </td>
                                     <td style={{ color: 'var(--color-slate-400)', fontSize: '12px' }}>
                                         {new Date(app.createdAt).toLocaleDateString('en-IN')}

@@ -133,12 +133,24 @@ const AdminApplicationDetail = () => {
                     {/* Documents */}
                     {app.documents?.length > 0 && (
                         <div className="card">
-                            <h3 style={{ fontSize: '14px', marginBottom: '12px' }}>Documents ({app.documents.length})</h3>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            <h3 style={{ fontSize: '14px', marginBottom: '12px' }}>Applicant Documents ({app.documents.length})</h3>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                                 {app.documents.map((doc, i) => (
-                                    <div key={i} className="card-inset" style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px' }}>
-                                        <span style={{ flex: 1, fontSize: '13px', fontWeight: 500 }}>{doc.name}</span>
-                                        <a href={doc.url} target="_blank" rel="noreferrer" className="btn btn-ghost btn-sm" style={{ fontSize: '12px' }}>View</a>
+                                    <div key={i} className="card-inset" style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '12px 14px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                            <span style={{ flex: 1, fontSize: '13px', fontWeight: 600, color: 'var(--color-slate-700)' }}>{doc.name}</span>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                <span className={`badge ${doc.status === 'APPROVED' ? 'badge-approved' : doc.status === 'REJECTED' ? 'badge-rejected' : 'badge-submitted'}`} style={{ fontSize: '10px', padding: '2px 8px' }}>
+                                                    {doc.status || 'PENDING'}
+                                                </span>
+                                                <a href={doc.url} target="_blank" rel="noreferrer" className="btn btn-ghost btn-sm" style={{ fontSize: '12px', padding: '4px 8px' }}>View</a>
+                                            </div>
+                                        </div>
+                                        {doc.doctorRemarks && (
+                                            <div style={{ fontSize: '12px', padding: '8px 10px', background: 'var(--color-rose-50)', borderRadius: '4px', color: 'var(--color-rose-700)', borderLeft: '2px solid var(--color-rose-300)' }}>
+                                                <strong>Doctor's Remark:</strong> {doc.doctorRemarks}
+                                            </div>
+                                        )}
                                     </div>
                                 ))}
                             </div>
@@ -166,6 +178,21 @@ const AdminApplicationDetail = () => {
                             </div>
                             {app.doctorEvaluation.notes && (
                                 <p style={{ marginTop: '10px', fontSize: '13px', color: 'var(--color-green-700)', fontStyle: 'italic' }}>"{app.doctorEvaluation.notes}"</p>
+                            )}
+
+                            {/* Supporting Evidence from Doctor */}
+                            {app.doctorEvaluation.supportingDocuments?.length > 0 && (
+                                <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px dashed var(--color-green-200)' }}>
+                                    <h4 style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-green-600)', marginBottom: '10px' }}>Supporting Evidence</h4>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                        {app.doctorEvaluation.supportingDocuments.map((doc, i) => (
+                                            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '6px 10px', background: 'var(--color-white)', borderRadius: '4px', border: '1px solid var(--color-green-100)' }}>
+                                                <div style={{ flex: 1, fontSize: '12px', fontWeight: 500, color: 'var(--color-slate-600)' }}>{doc.name}</div>
+                                                <a href={doc.url} target="_blank" rel="noreferrer" className="btn btn-ghost btn-sm" style={{ fontSize: '11px', padding: '2px 6px' }}>View</a>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
                             )}
                         </div>
                     )}
